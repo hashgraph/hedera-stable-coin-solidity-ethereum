@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.5.0 <0.7.0;
 
-contract Hbar {
-    address private owner;
-    address internal newOwnerCandidate;
+import "./Ownable.sol";
+
+contract Hbar is Ownable {
     address private supplyManager;
     address private assetProtectionManager;
 
@@ -12,19 +12,6 @@ contract Hbar {
 
     int256 public tokenDecimal;
     int256 public totalSupply;
-
-    modifier onlyOwner {
-        require(msg.sender == owner, "Only the owner can call this function.");
-        _;
-    }
-
-    modifier onlyNewOwnerCandidate {
-        require(
-            msg.sender == newOwnerCandidate,
-            "Only an address chosen by the owner can call this function."
-        );
-        _;
-    }
 
     modifier onlySupplyManager {
         require(
@@ -60,10 +47,6 @@ contract Hbar {
         tokenDecimal = _tokenDecimal;
         totalSupply = _totalSupply;
     }
-
-    function transferOwnership() public view onlyOwner {}
-
-    function claimOwnership() public view onlyNewOwnerCandidate {}
 
     function changeSupplyManager() public view onlyOwner {}
 
