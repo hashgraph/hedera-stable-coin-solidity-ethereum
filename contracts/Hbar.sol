@@ -30,8 +30,8 @@ contract Hbar is Ownable {
     }
 
     constructor(
-        string calldata _tokenName,
-        string calldata _tokenSymbol,
+        string memory _tokenName,
+        string memory _tokenSymbol,
         int256 _tokenDecimal,
         int256 _totalSupply,
         address _supplyManager,
