@@ -5,6 +5,8 @@ contract Ownable {
     address public owner;
     address internal newOwnerCandidate;
 
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
     constructor() public {
         owner = msg.sender;
     }
@@ -28,6 +30,8 @@ contract Ownable {
     }
 
     function claimOwnership() public onlyNewOwner {
+        emit OwnershipTransferred(owner, msg.sender);
         owner = msg.sender;
+        newOwnerCandidate = address(0);
     }
 }
