@@ -1,2 +1,4 @@
 installed_contracts/
 node_modules/
+
+.openzeppelin/.session
