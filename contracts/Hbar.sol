@@ -24,7 +24,7 @@ contract Hbar is Initializable, ContextUpgradeSafe, OwnableUpgradeSafe, AccessCo
     }
 
     modifier onlyNewOwner() {
-        require(msg.sender == _newOwner, "Only owner designated new owner can call this function.");
+        require(msg.sender == _newOwner, "Only the pre-designated new owner can call this function.");
         _;
     }
 
