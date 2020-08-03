@@ -154,7 +154,10 @@ contract Hbar is
     }
 
     function wipe(address account) public onlyAssetProtectionManager {
-        // TODO: What exactly?
+        // TODO: Something like this?
+        // transferFrom(address, supplyManager, balance);
+        // burn(address, balance)
+        // delete balances[address]
     }
 
     function setKycPassed(address account) public onlyAssetProtectionManager {
