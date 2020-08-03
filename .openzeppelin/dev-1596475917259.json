@@ -1,0 +1,14 @@
+{
+  "contracts": {},
+  "solidityLibs": {},
+  "proxies": {
+    "Hbar/Hbar": [
+      {
+        "address": "0x6B5C57448728a0a20fb24d2319f71B93CaD338Cb",
+        "kind": "NonProxy",
+        "bytecodeHash": "00abee05e464f70a5db0e54bbc830dc0a45c864a555341d469be43e16a9b126f"
+      }
+    ]
+  },
+  "manifestVersion": "2.2"
+}
