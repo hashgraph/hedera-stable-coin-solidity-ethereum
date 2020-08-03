@@ -77,8 +77,8 @@ contract Hbar is
         _setupRole(SUPPLY_MANAGER, supplyManager);
         _setupRole(ASSET_PROTECTION_MANAGER, assetProtectionManager);
         _setupRole(KYC_PASSED, msg.sender);
-        _setRoleAdmin(KYC_PASSED, assetProtectionManager);
-        _setRoleAdmin(FROZEN, assetProtectionManager);
+        _setRoleAdmin(KYC_PASSED, ASSET_PROTECTION_MANAGER);
+        _setRoleAdmin(FROZEN, ASSET_PROTECTION_MANAGER);
 
         grantRole(SUPPLY_MANAGER, msg.sender);
         grantRole(ASSET_PROTECTION_MANAGER, msg.sender);
@@ -121,17 +121,17 @@ contract Hbar is
         grantRole(ASSET_PROTECTION_MANAGER, msg.sender);
     }
 
-    function mint(address to, uint256 amount)
-        public
-        override(ERC20UpgradeSafe)
+    function _mint(address to, uint256 amount)
+        internal
+        override(ERC20UpgradeSafe, ERC20SnapshotUpgradeSafe)
         onlySupplyManager
     {
         super._mint(to, amount);
     }
 
-    function burn(address from, uint256 amount)
-        public
-        override(ERC20UpgradeSafe)
+    function _burn(address from, uint256 amount)
+        internal
+        override(ERC20UpgradeSafe, ERC20SnapshotUpgradeSafe)
         onlySupplyManager
     {
         super._burn(from, amount);
@@ -154,10 +154,8 @@ contract Hbar is
     }
 
     function wipe(address account) public onlyAssetProtectionManager {
-        // TODO: Something like this?
-        // transferFrom(address, supplyManager, balance);
-        // burn(address, balance)
-        // delete balances[address]
+        require(hasRole(FROZEN, account), "Account must be frozen before wipe.");
+        super._burn(account, balanceOf(account));
     }
 
     function setKycPassed(address account) public onlyAssetProtectionManager {

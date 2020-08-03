@@ -60,7 +60,7 @@ contract OwnableUpgradeSafe is Initializable, ContextUpgradeSafe {
         emit ProposedOwner(_proposedOwner);
     }
 
-    function claimOwnership() public onlyProposedOwner {
+    function claimOwnership() public virtual onlyProposedOwner {
         emit OwnershipTransferred(_owner, _proposedOwner);
         _owner = _proposedOwner;
         _proposedOwner = address(0);
