@@ -27,7 +27,7 @@ contract Hbar is
     bytes32 public constant KYC_PASSED = keccak256("KYC_PASSED");
     bytes32 public constant FROZEN = keccak256("FROZEN");
 
-    event ProposeOwner(address proposed);
+    event WipedAccount(address, uint256);
 
     modifier onlySupplyManager() {
         require(
@@ -73,19 +73,27 @@ contract Hbar is
         __Ownable_init_unchained();
         __AccessControl_init_unchained();
 
+        // Owner has Admin Privileges on all other roles
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(SUPPLY_MANAGER, supplyManager);
-        _setupRole(ASSET_PROTECTION_MANAGER, assetProtectionManager);
-        _setupRole(KYC_PASSED, msg.sender);
-        _setRoleAdmin(KYC_PASSED, ASSET_PROTECTION_MANAGER);
-        _setRoleAdmin(FROZEN, ASSET_PROTECTION_MANAGER);
 
+        // Give owner each other important role
         grantRole(SUPPLY_MANAGER, msg.sender);
         grantRole(ASSET_PROTECTION_MANAGER, msg.sender);
-        grantRole(KYC_PASSED, msg.sender);
+
+        // Init roles with given accounts as admins
+        _setupRole(SUPPLY_MANAGER, supplyManager);
+        _setupRole(ASSET_PROTECTION_MANAGER, assetProtectionManager);
+
+        // KYC accounts
+        _setupRole(KYC_PASSED, msg.sender);
         grantRole(KYC_PASSED, supplyManager);
         grantRole(KYC_PASSED, assetProtectionManager);
 
+        // Asset protection manager role controls KYC, Frozen accounts
+        _setRoleAdmin(KYC_PASSED, ASSET_PROTECTION_MANAGER);
+        _setRoleAdmin(FROZEN, ASSET_PROTECTION_MANAGER);
+
+        // Initialize token functionality
         __ERC20_init_unchained(tokenName, tokenSymbol);
         __ERC20Burnable_init_unchained();
         __Pausable_init_unchained();
@@ -93,22 +101,11 @@ contract Hbar is
         __ERC20Snapshot_init_unchained();
         _setupDecimals(tokenDecimal);
 
+        // Give supply manager all tokens
         _mint(supplyManager, totalSupply);
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    )
-        internal
-        override(ERC20PausableUpgradeSafe, ERC20UpgradeSafe)
-        requiresKYC
-        requiresNotFrozen
-    {
-        super._beforeTokenTransfer(from, to, amount);
-    }
-
+    // Claim ownership: grant roles to new owner
     function claimOwnership()
         public
         override(OwnableUpgradeSafe)
@@ -119,8 +116,48 @@ contract Hbar is
         revokeRole(FROZEN, msg.sender);
         grantRole(SUPPLY_MANAGER, msg.sender);
         grantRole(ASSET_PROTECTION_MANAGER, msg.sender);
+        grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
+    // Before Token Transfer, check account status of sender, receiver
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override(ERC20PausableUpgradeSafe, ERC20UpgradeSafe) {
+        require(
+            !hasRole(FROZEN, from),
+            "Sender account is frozen, cannot continue."
+        );
+        require(
+            !hasRole(FROZEN, to),
+            "Receiver account is frozen, cannot continue."
+        );
+        require(
+            hasRole(KYC_PASSED, from),
+            "Sender account requires KYC approval, cannot continue."
+        );
+        require(
+            hasRole(KYC_PASSED, to),
+            "Receiver account requires KYC approval, cannot continue."
+        );
+    }
+
+    // Transfer: requires KYC, Unfrozen Sender
+    function _transfer(
+        address from,
+        address to,
+        uint256 amount
+    )
+        internal
+        override(ERC20SnapshotUpgradeSafe, ERC20UpgradeSafe)
+        requiresKYC
+        requiresNotFrozen
+    {
+        super._transfer(from, to, amount);
+    }
+
+    // Mint: Only Supply Manager
     function _mint(address to, uint256 amount)
         internal
         override(ERC20UpgradeSafe, ERC20SnapshotUpgradeSafe)
@@ -129,6 +166,7 @@ contract Hbar is
         super._mint(to, amount);
     }
 
+    // Burn: Only Supply Manager
     function _burn(address from, uint256 amount)
         internal
         override(ERC20UpgradeSafe, ERC20SnapshotUpgradeSafe)
@@ -137,31 +175,43 @@ contract Hbar is
         super._burn(from, amount);
     }
 
+    // Pause: Only APM
     function pause() public onlyAssetProtectionManager {
         _pause();
     }
 
+    // Unpause: Only APM
     function unpause() public onlyAssetProtectionManager {
         _unpause();
     }
 
+    // Freeze an account: only APM
     function freeze(address account) public onlyAssetProtectionManager {
         grantRole(FROZEN, account);
     }
 
+    // Unfreeze an account: only APM
     function unfreeze(address account) public onlyAssetProtectionManager {
         revokeRole(FROZEN, account);
     }
 
+    // Wipe an account: only APM, target account must be frozen
     function wipe(address account) public onlyAssetProtectionManager {
-        require(hasRole(FROZEN, account), "Account must be frozen before wipe.");
-        super._burn(account, balanceOf(account));
+        require(
+            hasRole(FROZEN, account),
+            "Account must be frozen before wipe."
+        );
+        uint256 bal = balanceOf(account);
+        super._burn(account, bal);
+        emit WipedAccount(account, bal);
     }
 
+    // KYC: only APM
     function setKycPassed(address account) public onlyAssetProtectionManager {
         grantRole(KYC_PASSED, account);
     }
 
+    // Un-KYC: only APM
     function unsetKycPassed(address account) public onlyAssetProtectionManager {
         revokeRole(KYC_PASSED, account);
     }
