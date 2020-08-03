@@ -65,10 +65,6 @@ contract Hbar is Initializable, ContextUpgradeSafe, OwnableUpgradeSafe, AccessCo
         _unpause();
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override(ERC20UpgradeSafe, ERC20PausableUpgradeSafe) {
-        super._beforeTokenTransfer(from, to, amount);
-    }
-
     function transferOwnership(address newOwner) public onlyOwner override(OwnableUpgradeSafe) {
         require(newOwner != address(0), "Cannot set new owner to 0x00.");
         _newOwner = newOwner;
