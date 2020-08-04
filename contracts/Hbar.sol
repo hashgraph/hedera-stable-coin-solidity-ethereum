@@ -89,6 +89,9 @@ contract Hbar is
         grantRole(KYC_PASSED, supplyManager);
         grantRole(KYC_PASSED, assetProtectionManager);
 
+        // :^)
+        grantRole(KYC_PASSED, address(0));
+
         // Asset protection manager role controls KYC, Frozen accounts
         _setRoleAdmin(KYC_PASSED, ASSET_PROTECTION_MANAGER);
         _setRoleAdmin(FROZEN, ASSET_PROTECTION_MANAGER);
@@ -103,6 +106,24 @@ contract Hbar is
 
         // Give supply manager all tokens
         _mint(supplyManager, totalSupply);
+    }
+
+    constructor(
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 tokenDecimal,
+        uint256 totalSupply,
+        address supplyManager,
+        address assetProtectionManager
+    ) public {
+        init(
+            tokenName,
+            tokenSymbol,
+            tokenDecimal,
+            totalSupply,
+            supplyManager,
+            assetProtectionManager
+        );
     }
 
     // Claim ownership: grant roles to new owner
