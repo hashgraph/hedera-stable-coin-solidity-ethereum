@@ -82,7 +82,7 @@ contract Hbar is
         grantRole(SUPPLY_MANAGER_ROLE, msg.sender);
         grantRole(ASSET_PROTECTION_MANAGER_ROLE, msg.sender);
 
-        // Init roles with given accounts as admins
+        // Init roles with given accounts as members
         _setupRole(SUPPLY_MANAGER_ROLE, supplyManager);
         _setupRole(ASSET_PROTECTION_MANAGER_ROLE, assetProtectionManager);
 
