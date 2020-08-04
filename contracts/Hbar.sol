@@ -110,6 +110,7 @@ contract Hbar is
         _mint(supplyManager, totalSupply);
     }
 
+    // Non-"Upgradeable"
     constructor(
         string memory tokenName,
         string memory tokenSymbol,
