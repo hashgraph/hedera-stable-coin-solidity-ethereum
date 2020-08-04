@@ -1,7 +1,9 @@
 {
   "manifestVersion": "2.2",
   "contracts": {
-    "Hbar": "Hbar"
+    "Hbar": "Hbar",
+    "Migrations": "Migrations",
+    "OwnableUpgradeSafe": "OwnableUpgradeSafe"
   },
   "name": "Hbar",
   "version": "1.0.0",
