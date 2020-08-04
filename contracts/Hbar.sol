@@ -20,9 +20,11 @@ contract Hbar is
 {
     using SafeMath for uint256;
 
-    bytes32 public constant SUPPLY_MANAGER = keccak256("SUPPLY_MANAGER");
-    bytes32 public constant ASSET_PROTECTION_MANAGER = keccak256(
-        "ASSET_PROTECTION_MANAGER"
+    bytes32 public constant SUPPLY_MANAGER_ROLE = keccak256(
+        "SUPPLY_MANAGER_ROLE"
+    );
+    bytes32 public constant ASSET_PROTECTION_MANAGER_ROLE = keccak256(
+        "ASSET_PROTECTION_MANAGER_ROLE"
     );
     bytes32 public constant KYC_PASSED = keccak256("KYC_PASSED");
     bytes32 public constant FROZEN = keccak256("FROZEN");
@@ -31,7 +33,7 @@ contract Hbar is
 
     modifier onlySupplyManager() {
         require(
-            hasRole(SUPPLY_MANAGER, msg.sender),
+            hasRole(SUPPLY_MANAGER_ROLE, msg.sender),
             "Only a Supply Manager can call this function."
         );
         _;
@@ -39,7 +41,7 @@ contract Hbar is
 
     modifier onlyAssetProtectionManager() {
         require(
-            hasRole(ASSET_PROTECTION_MANAGER, msg.sender),
+            hasRole(ASSET_PROTECTION_MANAGER_ROLE, msg.sender),
             "Only an Asset Protection Manager can call this function."
         );
         _;
@@ -77,12 +79,12 @@ contract Hbar is
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         // Give owner each other important role
-        grantRole(SUPPLY_MANAGER, msg.sender);
-        grantRole(ASSET_PROTECTION_MANAGER, msg.sender);
+        grantRole(SUPPLY_MANAGER_ROLE, msg.sender);
+        grantRole(ASSET_PROTECTION_MANAGER_ROLE, msg.sender);
 
         // Init roles with given accounts as admins
-        _setupRole(SUPPLY_MANAGER, supplyManager);
-        _setupRole(ASSET_PROTECTION_MANAGER, assetProtectionManager);
+        _setupRole(SUPPLY_MANAGER_ROLE, supplyManager);
+        _setupRole(ASSET_PROTECTION_MANAGER_ROLE, assetProtectionManager);
 
         // KYC accounts
         _setupRole(KYC_PASSED, msg.sender);
@@ -93,8 +95,8 @@ contract Hbar is
         grantRole(KYC_PASSED, address(0));
 
         // Asset protection manager role controls KYC, Frozen accounts
-        _setRoleAdmin(KYC_PASSED, ASSET_PROTECTION_MANAGER);
-        _setRoleAdmin(FROZEN, ASSET_PROTECTION_MANAGER);
+        _setRoleAdmin(KYC_PASSED, ASSET_PROTECTION_MANAGER_ROLE);
+        _setRoleAdmin(FROZEN, ASSET_PROTECTION_MANAGER_ROLE);
 
         // Initialize token functionality
         __ERC20_init_unchained(tokenName, tokenSymbol);
@@ -135,8 +137,8 @@ contract Hbar is
         super.claimOwnership();
         grantRole(KYC_PASSED, msg.sender);
         revokeRole(FROZEN, msg.sender);
-        grantRole(SUPPLY_MANAGER, msg.sender);
-        grantRole(ASSET_PROTECTION_MANAGER, msg.sender);
+        grantRole(SUPPLY_MANAGER_ROLE, msg.sender);
+        grantRole(ASSET_PROTECTION_MANAGER_ROLE, msg.sender);
         grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 

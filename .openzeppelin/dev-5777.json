@@ -399,6 +399,14 @@
         "address": "0x8e9205b663829655B34986e55025eE2d7215D1AD",
         "kind": "NonProxy",
         "bytecodeHash": "3fb16969bd25ea82bffebd154f44aad3767ef19a1ca641fbca26d54ebc25c44a"
+<<<<<<< HEAD
+=======
+      },
+      {
+        "address": "0x4655bde52de89B8233aFca0FcBf0666a1deAaadC",
+        "kind": "NonProxy",
+        "bytecodeHash": "c7b32bbe59d6db6c7f937c5b41d1483e3d1e9ec951dcb2359cdfd9f60dbf1cf1"
+>>>>>>> 243e138... Hbar Smart Contract
       }
     ]
   },
