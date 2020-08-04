@@ -129,6 +129,14 @@ contract Hbar is
         );
     }
 
+    // convenience method
+    function isPrivilegedRole(address account) public view returns (bool) {
+        return
+            hasRole(SUPPLY_MANAGER_ROLE, account) ||
+            hasRole(ASSET_PROTECTION_MANAGER_ROLE, account) ||
+            account == owner();
+    }
+
     // Claim ownership: grant roles to new owner
     function claimOwnership()
         public
@@ -190,6 +198,12 @@ contract Hbar is
         super._mint(to, amount);
     }
 
+    // convenience method
+    function mint(uint256 amount) public onlySupplyManager {
+        address firstSupplyManager = getRoleMember(SUPPLY_MANAGER_ROLE, 0);
+        _mint(firstSupplyManager, amount);
+    }
+
     // Burn: Only Supply Manager
     function _burn(address from, uint256 amount)
         internal
@@ -217,6 +231,16 @@ contract Hbar is
     // Unfreeze an account: only APM
     function unfreeze(address account) public onlyAssetProtectionManager {
         revokeRole(FROZEN, account);
+    }
+
+    // convenience getter
+    function isAccountFrozen(address account) public view returns (bool) {
+        return hasRole(FROZEN, account);
+    }
+
+    // convenience getter
+    function isKycPassed(address account) public view returns (bool) {
+        return hasRole(KYC_PASSED, account);
     }
 
     // Wipe an account: only APM, target account must be frozen
