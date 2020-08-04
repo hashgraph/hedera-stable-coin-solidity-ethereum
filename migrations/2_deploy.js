@@ -1,4 +1,4 @@
-const { scripts, ConfigManager, network } = require("@openzeppelin/cli");
+const { scripts, ConfigManager } = require("@openzeppelin/cli");
 const { add, push, create } = scripts;
 
 async function deploy(options) {
