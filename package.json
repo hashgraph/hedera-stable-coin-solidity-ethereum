@@ -6,6 +6,11 @@
   },
   "devDependencies": {
     "@openzeppelin/test-environment": "^0.1.4",
-    "ganache-cli": "^6.9.1"
+    "chai": "^4.2.0",
+    "ganache-cli": "^6.9.1",
+    "mocha": "^8.1.0"
+  },
+  "scripts": {
+    "test": "mocha --exit --recursive test"
   }
 }

@@ -10,11 +10,12 @@ contract OwnableUpgradeSafe is Initializable, ContextUpgradeSafe {
     address private _owner;
     address private _proposedOwner;
 
-    event ProposedOwner(address indexed proposedOwner);
+    event ProposeOwner(address indexed proposedOwner);
     event OwnershipTransferred(
         address indexed previousOwner,
         address indexed newOwner
     );
+    event ClaimOwnership(address);
 
     function __Ownable_init() internal initializer {
         __Context_init_unchained();
@@ -57,19 +58,20 @@ contract OwnableUpgradeSafe is Initializable, ContextUpgradeSafe {
         _owner = address(0);
     }
 
-    function transferOwnership(address newOwner) public virtual onlyOwner {
+    function proposeOwner(address newOwner) public virtual onlyOwner {
         require(
             newOwner != address(0),
             "Cannot propose 0x0 as new owner."
         );
         _proposedOwner = newOwner;
-        emit ProposedOwner(_proposedOwner);
+        emit ProposeOwner(_proposedOwner);
     }
 
     function claimOwnership() public virtual onlyProposedOwner {
         emit OwnershipTransferred(_owner, _proposedOwner);
         _owner = _proposedOwner;
         _proposedOwner = address(0);
+        emit ClaimOwnership(_owner);
     }
 
     uint256[49] private __gap;
