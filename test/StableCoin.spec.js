@@ -4,7 +4,7 @@ const { expect } = require("chai");
 const StableCoin = contract.fromArtifact("StableCoin");
 
 describe("StableCoin", () => {
-    const [ owner, supplyManager, assetProtectionManager ] = accounts;
+    const [ supplyManager, assetProtectionManager ] = accounts;
 
     beforeEach(async() => {
         this.contract = await StableCoin.new(
@@ -19,5 +19,7 @@ describe("StableCoin", () => {
 
     it("initializes", async() => {
         console.log(await this.contract.owner());
+        console.log(await this.contract.supplyManager());
+        console.log(await this.contract.assetProtectionManager());
     });
 });
