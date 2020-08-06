@@ -251,6 +251,12 @@ contract StableCoin is
         require(isKycPassed(to), "Receiver requires KYC to continue.");
         require(!isFrozen(from), "Sender account is frozen.");
         require(!isFrozen(to), "Receiver account is frozen.");
+        require(
+            _msgSender() == owner() ||
+                _msgSender() == supplyManager() ||
+                to != address(0),
+            "Only the supply manager can burn coins, cannot transfer to 0x0."
+        );
         super._beforeTokenTransfer(); // Checks !paused
     }
 
