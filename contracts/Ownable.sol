@@ -45,11 +45,11 @@ contract OwnableUpgradeSafe is Initializable, ContextUpgradeSafe {
         _;
     }
 
-    function disregardProposedOwner() public onlyOwner {
+    function disregardProposedOwner() private onlyOwner {
         _proposedOwner = address(0);
     }
 
-    function proposeOwner(address newOwner) public virtual onlyOwner {
+    function proposeOwner(address newOwner) public onlyOwner {
         require(
             newOwner != address(0),
             "Cannot propose 0x0 as new owner."

@@ -3,8 +3,7 @@ pragma solidity >=0.4.21 <0.7.0;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20Burnable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20Pausable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20Snapshot.sol";
 
 import "./Ownable.sol";
@@ -12,10 +11,9 @@ import "./Ownable.sol";
 contract StableCoin is
     Initializable,
     ContextUpgradeSafe,
+    PausableUpgradeSafe,
     OwnableUpgradeSafe,
     AccessControlUpgradeSafe,
-    ERC20BurnableUpgradeSafe,
-    ERC20PausableUpgradeSafe,
     ERC20SnapshotUpgradeSafe
 {
     using SafeMath for uint256;
@@ -35,10 +33,12 @@ contract StableCoin is
     event Approve(address, address, uint256);
     event IncreaseAllowance(address, address, uint256);
     event DecreaseAllowance(address, address, uint256);
-    event Freeze(address);
+    event Freeze(address); // Freeze: Freeze this account
     event Unfreeze(address);
     event SetKycPassed(address);
     event UnsetKycPassed(address);
+    event Pause(address); // Pause: Pause entire contract
+    event Unpause(address);
 
     function init(
         string memory tokenName,
@@ -68,9 +68,7 @@ contract StableCoin is
 
         // Initialize token functionality
         __ERC20_init_unchained(tokenName, tokenSymbol);
-        __ERC20Burnable_init_unchained();
         __Pausable_init_unchained();
-        __ERC20Pausable_init_unchained();
         __ERC20Snapshot_init_unchained();
         _setupDecimals(tokenDecimal);
 
@@ -178,7 +176,7 @@ contract StableCoin is
     // KYC: only APM
     function setKycPassed(address account) public onlyAssetProtectionManager {
         grantRole(KYC_PASSED, account);
-        emit SetKycPassed(address);
+        emit SetKycPassed(account);
     }
 
     // Un-KYC: only APM, only non-privileged accounts
@@ -222,18 +220,20 @@ contract StableCoin is
     }
 
     // Check Transfer Allowed
-    function checkTransferAllowed(address account) public returns (bool) {
+    function checkTransferAllowed(address account) public view returns (bool) {
         return isKycPassed(account) && !isFrozen(account);
     }
 
     // Pause: Only APM
     function pause() private onlyAssetProtectionManager {
         _pause();
+        emit Pause(_msgSender());
     }
 
     // Unpause: Only APM
     function unpause() private onlyAssetProtectionManager {
         _unpause();
+        emit Unpause(_msgSender());
     }
 
     // Check Transfer Allowed
@@ -243,7 +243,7 @@ contract StableCoin is
         uint256 amount
     )
         internal
-        override(ERC20UpgradeSafe, ERC20PausableUpgradeSafe)
+        override(ERC20UpgradeSafe)
         requiresKYC
         requiresNotFrozen
     {
@@ -256,13 +256,14 @@ contract StableCoin is
                 _msgSender() == supplyManager() ||
                 to != address(0),
             "Only the supply manager can burn coins, cannot transfer to 0x0."
-        );
-        super._beforeTokenTransfer(); // Checks !paused
+        ); // Only owner and supplyManager can burn coins
+        require(!paused(), "Contract paused, cannot continue.");
+        super._beforeTokenTransfer(from, to, amount); // Checks !paused
     }
 
     // Claim Ownership
     function claimOwnership()
-        private
+        public
         override(OwnableUpgradeSafe)
         onlyProposedOwner
     {
@@ -279,7 +280,7 @@ contract StableCoin is
             "Account must be frozen prior to wipe."
         );
         uint256 balance = balanceOf(account);
-        _transfer(address, supplyManager(), balance); // emits Transfer
+        _transfer(account, supplyManager(), balance); // emits Transfer
         burn(balance); // emits Transfer, Burn
         emit Wipe(account, balance);
     }
@@ -300,8 +301,10 @@ contract StableCoin is
     function transfer(address to, uint256 amount)
         public
         override(ERC20UpgradeSafe)
+        returns (bool)
     {
         super._transfer(_msgSender(), to, amount); // emits Transfer
+        return true;
     }
 
     // Transfer From (transfer between allowances)
@@ -309,37 +312,41 @@ contract StableCoin is
         address from,
         address to,
         uint256 amount
-    ) public override(ERC20UpgradeSafe) {
-        super.transferFrom(from, to, amount); // emits Transfer, Approval
-        emit Approve(from, to, allowance(from, _msgSender()).sub(amount));
+    ) public override(ERC20UpgradeSafe) returns (bool) {
+        bool result = super.transferFrom(from, to, amount); // emits Transfer, Approval
+        if (result)
+            emit Approve(from, to, allowance(from, _msgSender()).sub(amount));
+        return result;
     }
 
     // Approve Allowance
     function approveAllowance(address spender, uint256 amount)
         private
-        override(ERC20UpgradeSafe)
     {
-        super._approve(spender, amount); // emits Approval
+        super._approve(_msgSender(), spender, amount); // emits Approval
         emit Approve(_msgSender(), spender, amount);
     }
 
     // Increase Allowance
     function increaseAllowance(address spender, uint256 amount)
-        private
+        public
         override(ERC20UpgradeSafe)
+        returns (bool)
     {
         _approve(
             _msgSender(),
             spender,
             allowance(_msgSender(), spender).add(amount)
         ); // emits Approval
-        emit IncreaseAllowance(spender, amount);
+        emit IncreaseAllowance(_msgSender(), spender, amount);
+        return true;
     }
 
     // Decrease Allowance
     function decreaseAllowance(address spender, uint256 amount)
-        private
+        public
         override(ERC20UpgradeSafe)
+        returns (bool)
     {
         uint256 newAllowance = allowance(_msgSender(), spender).sub(
             amount,
@@ -348,6 +355,7 @@ contract StableCoin is
         uint256 diff = allowance(_msgSender(), spender).sub(newAllowance);
         _approve(_msgSender(), spender, newAllowance); // emits Approval
         emit DecreaseAllowance(_msgSender(), spender, diff);
+        return true;
     }
 
     // For OZ upgrades: Add variable before this and decrement size
