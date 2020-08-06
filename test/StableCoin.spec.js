@@ -1,19 +1,23 @@
-const { accounts, contract } = import("@openzeppelin/test-environment");
-const { expect } = import("chai");
+const { accounts, contract } = require("@openzeppelin/test-environment");
+const { expect } = require("chai");
 
 const StableCoin = contract.fromArtifact("StableCoin");
 
 describe("StableCoin", () => {
-    const [ owner ] = accounts;
+    const [ owner, supplyManager, assetProtectionManager ] = accounts;
 
     beforeEach(async() => {
-        this.contract = await StableCoin.new({
-            from: owner
-        });
+        this.contract = await StableCoin.new(
+            "Stable Coin", 
+            "c", 
+            18, 
+            10000, 
+            supplyManager, 
+            assetProtectionManager
+        );
     });
 
-    it("initializes", () => {
-        console.log(this.contract);
-        console.log(owner);
+    it("initializes", async() => {
+        console.log(await this.contract.owner());
     });
 });
