@@ -63,7 +63,7 @@ contract StableCoin is
         grantRole(KYC_PASSED, supplyManager);
         grantRole(KYC_PASSED, assetProtectionManager);
 
-        // :^)
+        // So mint and burn work
         grantRole(KYC_PASSED, address(0));
 
         // Initialize token functionality
@@ -75,7 +75,7 @@ contract StableCoin is
         _setupDecimals(tokenDecimal);
 
         // Give supply manager all tokens
-        _mint(supplyManager, totalSupply);
+        mint(totalSupply); // Emits Transfer, Mint
 
         // Did it
         emit Constructed(
@@ -125,6 +125,8 @@ contract StableCoin is
             "Cannot change supply manager to 0x0."
         );
         _supplyManager = newSupplyManager;
+        grantRole(KYC_PASSED, _supplyManager);
+        revokeRole(FROZEN, _supplyManager);
         emit ChangeSupplyManager(newSupplyManager);
     }
 
@@ -149,6 +151,8 @@ contract StableCoin is
             "Cannot change asset protection manager to 0x0."
         );
         _assetProtectionManager = newAssetProtectionManager;
+        grantRole(KYC_PASSED, _assetProtectionManager);
+        revokeRole(FROZEN, _assetProtectionManager);
         emit ChangeAssetProtectionManager(newAssetProtectionManager);
     }
 
@@ -183,6 +187,7 @@ contract StableCoin is
             !isPrivilegedRole(account),
             "Cannot unset KYC for administrator account."
         );
+        require(account != address(0), "Cannot unset KYC for address 0x0.");
         revokeRole(KYC_PASSED, account);
         emit UnsetKycPassed(account);
     }
@@ -195,12 +200,17 @@ contract StableCoin is
         _;
     }
 
+    function isFrozen(address account) public view returns (bool) {
+        return hasRole(FROZEN, account);
+    }
+
     // Freeze an account: only APM, only non-privileged accounts
     function freeze(address account) public onlyAssetProtectionManager {
         require(
             !isPrivilegedRole(account),
             "Cannot freeze administrator account."
         );
+        require(account != address(0), "Cannot freeze address 0x0.");
         grantRole(FROZEN, account);
         emit Freeze(account);
     }
@@ -211,8 +221,9 @@ contract StableCoin is
         emit Unfreeze(account);
     }
 
-    function isFrozen(address account) public view returns (bool) {
-        return hasRole(FROZEN, account);
+    // Check Transfer Allowed
+    function checkTransferAllowed(address account) public returns (bool) {
+        return isKycPassed(account) && !isFrozen(account);
     }
 
     // Pause: Only APM
@@ -231,13 +242,13 @@ contract StableCoin is
         address to,
         uint256 amount
     )
-        private
+        internal
         override(ERC20UpgradeSafe, ERC20PausableUpgradeSafe)
         requiresKYC
         requiresNotFrozen
     {
-        require(hasRole(KYC_PASSED, from), "Sender requires KYC to continue.");
-        require(hasRole(KYC_PASSED, to), "Receiver requires KYC to continue.");
+        require(isKycPassed(from), "Sender requires KYC to continue.");
+        require(isKycPassed(to), "Receiver requires KYC to continue.");
         require(!isFrozen(from), "Sender account is frozen.");
         require(!isFrozen(to), "Receiver account is frozen.");
         super._beforeTokenTransfer(); // Checks !paused
@@ -252,6 +263,7 @@ contract StableCoin is
         revokeRole(KYC_PASSED, owner());
         super.claimOwnership(); // emits ClaimOwnership
         grantRole(KYC_PASSED, owner());
+        revokeRole(FROZEN, owner());
     }
 
     // Wipe
@@ -286,14 +298,14 @@ contract StableCoin is
         super._transfer(_msgSender(), to, amount); // emits Transfer
     }
 
-    // Transfer From
+    // Transfer From (transfer between allowances)
     function transferFrom(
         address from,
         address to,
         uint256 amount
     ) public override(ERC20UpgradeSafe) {
         super.transferFrom(from, to, amount); // emits Transfer, Approval
-        emit Approve(from, to, _allowances[sender][_msgSender()].sub(amount));
+        emit Approve(from, to, allowance(from, _msgSender()).sub(amount));
     }
 
     // Approve Allowance
@@ -313,30 +325,25 @@ contract StableCoin is
         _approve(
             _msgSender(),
             spender,
-            _allowances[_msgSender()][spender].add(amount)
+            allowance(_msgSender(), spender).add(amount)
         ); // emits Approval
         emit IncreaseAllowance(spender, amount);
     }
 
-    // Decrease Allowance (if more than allowed, set allowance to 0)
+    // Decrease Allowance
     function decreaseAllowance(address spender, uint256 amount)
         private
         override(ERC20UpgradeSafe)
     {
-        uint256 newAllowance = 0;
-        uint256 diff = _allowances[_msgSender()][spender];
-
-        try
-            newAllowance = _allowances[_msgSender()][spender].sub(amount)
-         {} catch {}
-
-        if (newAllowance > 0) {
-            diff = _allowances[_msgSender()][spender].sub(newAllowance);
-        }
-
+        uint256 newAllowance = allowance(_msgSender(), spender).sub(
+            amount,
+            "Amount greater than allowance."
+        );
+        uint256 diff = allowance(_msgSender(), spender).sub(newAllowance);
         _approve(_msgSender(), spender, newAllowance); // emits Approval
-        emit DecreaseAllowance(spender, diff);
+        emit DecreaseAllowance(_msgSender(), spender, diff);
     }
 
+    // For OZ upgrades: Add variable before this and decrement size
     uint256[50] private __gap;
 }
