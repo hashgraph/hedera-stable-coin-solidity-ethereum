@@ -11,7 +11,7 @@ contract OwnableUpgradeSafe is Initializable, ContextUpgradeSafe {
     address private _proposedOwner;
 
     event ProposeOwner(address indexed proposedOwner);
-    event ClaimOwnership(address);
+    event ClaimOwnership(address newOwner);
 
     function __Ownable_init() internal initializer {
         __Context_init_unchained();
@@ -39,7 +39,7 @@ contract OwnableUpgradeSafe is Initializable, ContextUpgradeSafe {
 
     modifier onlyProposedOwner() {
         require(
-            msg.sender == _proposedOwner,
+            _msgSender() == _proposedOwner,
             "Only the proposed owner can call this function."
         );
         _;

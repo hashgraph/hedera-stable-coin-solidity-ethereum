@@ -1,25 +1,108 @@
 const { accounts, contract } = require("@openzeppelin/test-environment");
 const { expect } = require("chai");
+const web3 = require("web3");
+
+const {
+  BN, // Big Number support
+  constants, // Common constants, like the zero address and largest integers
+  expectEvent, // Assertions for emitted events
+  expectRevert, // Assertions for transactions that should fail
+} = require("@openzeppelin/test-helpers");
 
 const StableCoin = contract.fromArtifact("StableCoin");
 
 describe("StableCoin", () => {
-    const [ supplyManager, assetProtectionManager ] = accounts;
+  this.contract = null;
 
-    beforeEach(async() => {
-        this.contract = await StableCoin.new(
-            "Stable Coin", 
-            "c", 
-            18, 
-            10000, 
-            supplyManager, 
-            assetProtectionManager
-        );
+  const [squidward, skynet, rand_paul, nimdok] = accounts; // get accounts from test utils
+
+  // Contract Information
+  const name = "Bikini Bottom Bux";
+  const symbol = "~*~";
+  const decimals = 18;
+  const totalSupply = (300 * 10) ^ decimals; // 300 BBB in circulation
+  const owner = skynet;
+  const supplyManager = squidward;
+  const assetProtectionManager = rand_paul;
+  const frozenRole = web3.utils.asciiToHex("FROZEN");
+  const kycPassedRole = web3.utils.asciiToHex("KYC_PASSED");
+
+  beforeEach(async () => {
+    this.contract = await StableCoin.new(
+      name,
+      symbol,
+      decimals,
+      totalSupply,
+      supplyManager,
+      assetProtectionManager,
+      { from: owner }
+    );
+  });
+
+  it("initializes w/ expected state", async () => {
+    expect((await this.contract.owner()) == owner);
+    expect((await this.contract.supplyManager()) == supplyManager);
+    expect(
+      (await this.contract.assetProtectionManager()) == assetProtectionManager
+    );
+    expect(
+      (await this.contract.balanceOf(supplyManager)) ==
+        (await this.contract.totalSupply())
+    );
+    expect((await this.contract.name()) == name);
+    expect((await this.contract.symbol()) == symbol);
+    expect((await this.contract.decimals()) == decimals);
+    expect((await this.contract.totalSupply()) == totalSupply);
+    expect(await this.contract.isKycPassed(owner));
+    expect(await this.contract.isKycPassed(supplyManager));
+    expect(await this.contract.isKycPassed(assetProtectionManager));
+    expect((await this.contract.proposedOwner()) == constants.ZERO_ADDRESS);
+    expect(
+      (await this.contract.getRoleMemberCount(frozenRole, { from: owner })) == 0
+    );
+    expect(
+      (await this.contract.getRoleMemberCount(kycPassedRole, {
+        from: owner,
+      })) == 3
+    );
+  });
+
+  it("can change owner", async () => {
+    const proposedOwner = nimdok; // oh no
+
+    // Only owner can propose owner
+    expectRevert(
+      this.contract.proposeOwner(nimdok, { from: nimdok }),
+      "Only the owner can call this function."
+    );
+
+    // Can't claim ownership if not proposed
+    expectRevert(
+      this.contract.claimOwnership({ from: nimdok }),
+      "Only the proposed owner can call this function."
+    );
+
+    // Owner can propose ownership
+    const proposeReceipt = await this.contract.proposeOwner(proposedOwner, {
+      from: owner,
     });
 
-    it("initializes", async() => {
-        console.log(await this.contract.owner());
-        console.log(await this.contract.supplyManager());
-        console.log(await this.contract.assetProtectionManager());
-    });
+    // emits ProposeOwner
+    expectEvent(proposeReceipt, "ProposeOwner", { proposedOwner: nimdok });
+
+    // Proposed owner can claim contract
+    const claimReceipt = await this.contract.claimOwnership({ from: nimdok });
+
+    // emits ClaimOwnership
+    expectEvent(claimReceipt, "ClaimOwnership", { newOwner: nimdok });
+
+    // new owner is proposed owner, has KYC passed, not frozen
+    expect(this.contract.owner() == nimdok);
+    expect(this.contract.isKycPassed(nimdok));
+    expect(this.contract.isFrozen(nimdok) == false);
+  });
+
+  afterEach(() => {
+    this.contract = null;
+  });
 });

@@ -24,21 +24,29 @@ contract StableCoin is
     address private _supplyManager;
     address private _assetProtectionManager;
 
-    event Constructed(string, string, uint8, uint256, address, address);
-    event ChangeSupplyManager(address);
-    event ChangeAssetProtectionManager(address);
-    event Wipe(address, uint256);
-    event Mint(address, uint256);
-    event Burn(address, uint256);
-    event Approve(address, address, uint256);
-    event IncreaseAllowance(address, address, uint256);
-    event DecreaseAllowance(address, address, uint256);
-    event Freeze(address); // Freeze: Freeze this account
-    event Unfreeze(address);
-    event SetKycPassed(address);
-    event UnsetKycPassed(address);
-    event Pause(address); // Pause: Pause entire contract
-    event Unpause(address);
+    event Constructed(
+        string tokenName,
+        string tokenSymbol,
+        uint8 tokenDecimal,
+        uint256 totalSupply,
+        address supplyManager,
+        address assetProtectionManager
+    );
+
+    event ChangeSupplyManager(address newSupplyManager);
+    event ChangeAssetProtectionManager(address newAssetProtectionManager);
+    event Wipe(address account, uint256 amount);
+    event Mint(address account, uint256 amount);
+    event Burn(address account, uint256 amount);
+    event Approve(address sender, address spender, uint256 amount);
+    event IncreaseAllowance(address sender, address spender, uint256 amount);
+    event DecreaseAllowance(address sender, address spender, uint256 amount);
+    event Freeze(address account); // Freeze: Freeze this account
+    event Unfreeze(address account);
+    event SetKycPassed(address account);
+    event UnsetKycPassed(address account);
+    event Pause(address sender); // Pause: Pause entire contract
+    event Unpause(address sender);
 
     function init(
         string memory tokenName,
@@ -55,11 +63,14 @@ contract StableCoin is
         _supplyManager = supplyManager;
         _assetProtectionManager = assetProtectionManager;
 
-        // Owner has Admin Privileges on all other roles
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        // Owner has Admin Privileges on all roles
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender()); // sudo role
+
+        // Give APM ability to grant/revoke roles (but not admin of this role)
+        grantRole(DEFAULT_ADMIN_ROLE, assetProtectionManager);
 
         // KYC accounts
-        _setupRole(KYC_PASSED, _msgSender());
+        grantRole(KYC_PASSED, _msgSender());
         grantRole(KYC_PASSED, supplyManager);
         grantRole(KYC_PASSED, assetProtectionManager);
 
@@ -241,12 +252,7 @@ contract StableCoin is
         address from,
         address to,
         uint256 amount
-    )
-        internal
-        override(ERC20UpgradeSafe)
-        requiresKYC
-        requiresNotFrozen
-    {
+    ) internal override(ERC20UpgradeSafe) requiresKYC requiresNotFrozen {
         require(isKycPassed(from), "Sender requires KYC to continue.");
         require(isKycPassed(to), "Receiver requires KYC to continue.");
         require(!isFrozen(from), "Sender account is frozen.");
@@ -258,7 +264,7 @@ contract StableCoin is
             "Only the supply manager can burn coins, cannot transfer to 0x0."
         ); // Only owner and supplyManager can burn coins
         require(!paused(), "Contract paused, cannot continue.");
-        super._beforeTokenTransfer(from, to, amount); // Checks !paused
+        super._beforeTokenTransfer(from, to, amount); // callbacks from above (if any)
     }
 
     // Claim Ownership
@@ -267,10 +273,12 @@ contract StableCoin is
         override(OwnableUpgradeSafe)
         onlyProposedOwner
     {
-        revokeRole(KYC_PASSED, owner());
+        address prevOwner = owner();
         super.claimOwnership(); // emits ClaimOwnership
-        grantRole(KYC_PASSED, owner());
-        revokeRole(FROZEN, owner());
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        grantRole(KYC_PASSED, _msgSender());
+        revokeRole(FROZEN, _msgSender());
+        revokeRole(KYC_PASSED, prevOwner);
     }
 
     // Wipe
@@ -320,9 +328,7 @@ contract StableCoin is
     }
 
     // Approve Allowance
-    function approveAllowance(address spender, uint256 amount)
-        private
-    {
+    function approveAllowance(address spender, uint256 amount) private {
         super._approve(_msgSender(), spender, amount); // emits Approval
         emit Approve(_msgSender(), spender, amount);
     }
