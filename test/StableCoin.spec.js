@@ -3,7 +3,6 @@ const { expect } = require("chai");
 const web3 = require("web3");
 
 const {
-  BN, // Big Number support
   constants, // Common constants, like the zero address and largest integers
   expectEvent, // Assertions for emitted events
   expectRevert, // Assertions for transactions that should fail
@@ -19,8 +18,8 @@ describe("StableCoin", () => {
   // Contract Information
   const name = "Bikini Bottom Bux";
   const symbol = "~*~";
-  const decimals = 18;
-  const totalSupply = (300 * 10) ^ decimals; // 300 BBB in circulation
+  const decimals = 18;  // same as ether <-> wei for convenience
+  const totalSupply = web3.utils.toWei("300", "ether"); // 300 BBB in circulation
   const owner = skynet;
   const supplyManager = squidward;
   const assetProtectionManager = rand_paul;
@@ -131,15 +130,20 @@ describe("StableCoin", () => {
       expectEvent(kycReceipt, "SetKycPassed", { account: nimdok });
       expect((await this.contract.getRoleMemberCount(kycPassedRole, { from: owner })) == 4);
       expect((await this.contract.hasRole(kycPassedRole, nimdok, { from: owner })));
+      
       const unkycReceipt = await this.contract.unsetKycPassed(nimdok, { from: assetProtectionManager });
       expectEvent(unkycReceipt, "UnsetKycPassed", { account: nimdok });
       expect((await this.contract.getRoleMemberCount(kycPassedRole, { from: owner })) == 3);
       expect(!(await this.contract.hasRole(kycPassedRole, nimdok, { from: owner })));
   });
 
-//   it("can freeze accounts", async () => {
-//       const freezeReceipt = await this.contract.freeze(nimdok);
-//   });
+  it("can freeze accounts", async () => {
+      await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
+      await this.contract.transfer(nimdok, web3.utils.toWei("10", "ether"), { from: supplyManager });
+      await this.contract.freeze(nimdok, { from: assetProtectionManager });
+      const transferReceipt = this.contract.transfer(owner, web3.utils.toWei("5", "ether"), { from: nimdok });
+      expectRevert(transferReceipt, "Your account has been frozen, cannot call function.");
+  });
 
 //   it.todo("is transferrable");
   
