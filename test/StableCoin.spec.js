@@ -102,6 +102,30 @@ describe("StableCoin", () => {
     expect(this.contract.isFrozen(nimdok) == false);
   });
 
+  it("can change supply manager", async () => {
+      expectRevert(
+          this.contract.changeSupplyManager(nimdok, { from: nimdok }),
+          "Only the owner can call this function"
+      );
+
+      const changeReceipt = await this.contract.changeSupplyManager(nimdok, { from: owner });
+      
+      expectEvent(changeReceipt, "ChangeSupplyManager", { newSupplyManager: nimdok });
+      expect(this.contract.supplyManager() == nimdok);
+  });
+
+  it("can change asset protection manager", async () => {
+      expectRevert(
+          this.contract.changeAssetProtectionManager(nimdok, { from: nimdok }),
+          "Only the owner can call this function."
+      );
+
+      const changeReceipt = await this.contract.changeAssetProtectionManager(nimdok, { from: owner });
+      
+      expectEvent(changeReceipt, "ChangeAssetProtectionManager", { newAssetProtectionManager: nimdok });
+      expect(this.contract.assetProtectionManager() == nimdok);
+  });
+
   afterEach(() => {
     this.contract = null;
   });

@@ -125,7 +125,7 @@ contract StableCoin is
         _;
     }
 
-    function changeSupplyManager(address newSupplyManager) private onlyOwner {
+    function changeSupplyManager(address newSupplyManager) public onlyOwner {
         require(
             newSupplyManager != address(0),
             "Cannot change supply manager to 0x0."
@@ -149,7 +149,7 @@ contract StableCoin is
     }
 
     function changeAssetProtectionManager(address newAssetProtectionManager)
-        private
+        public
         onlyOwner
     {
         require(
