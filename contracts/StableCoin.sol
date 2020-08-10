@@ -248,13 +248,13 @@ contract StableCoin is
     }
 
     // Pause: Only APM
-    function pause() private onlyAssetProtectionManager {
+    function pause() public onlyAssetProtectionManager {
         _pause();
         emit Pause(_msgSender());
     }
 
     // Unpause: Only APM
-    function unpause() private onlyAssetProtectionManager {
+    function unpause() public onlyAssetProtectionManager {
         _unpause();
         emit Unpause(_msgSender());
     }
@@ -338,7 +338,7 @@ contract StableCoin is
         override(ERC20UpgradeSafe)
         returns (bool)
     {
-        _transfer(_msgSender(), to, amount); // emits Transfer
+        _transfer(_msgSender(), to, amount); // emits Transfer([])
         emit Transfer(_msgSender(), to, amount); // named fields
         return true;
     }

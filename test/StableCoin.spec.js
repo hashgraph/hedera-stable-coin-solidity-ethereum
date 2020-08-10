@@ -13,7 +13,7 @@ const StableCoin = contract.fromArtifact("StableCoin");
 describe("StableCoin", () => {
   this.contract = null;
 
-  const [squidward, skynet, rand_paul, nimdok, ultron] = accounts; // get accounts from test utils
+  const [squidward, skynet, rand_paul, nimdok, ultron, erasmus] = accounts; // get accounts from test utils
 
   // Contract Information
   const name = "Bikini Bottom Bux";
@@ -134,7 +134,7 @@ describe("StableCoin", () => {
     expect(this.contract.assetProtectionManager() == nimdok);
   });
 
-  it("can set KYC for accounts", async () => {
+  it("can set and unset KYC for accounts", async () => {
     const kycReceipt = await this.contract.setKycPassed(nimdok, {
       from: assetProtectionManager,
     });
@@ -166,7 +166,7 @@ describe("StableCoin", () => {
     );
   });
 
-  it("can freeze accounts", async () => {
+  it("can freeze and unfreeze accounts", async () => {
     await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
     await this.contract.transfer(nimdok, web3.utils.toWei("10", "ether"), {
       from: supplyManager,
@@ -183,9 +183,19 @@ describe("StableCoin", () => {
       }),
       "Your account has been frozen, cannot call function."
     );
-  });
 
-    //   it.todo("is pausable");
+    const unfreezeReceipt = await this.contract.unfreeze(nimdok, {
+        from: assetProtectionManager
+    });
+    expectEvent(unfreezeReceipt, "Unfreeze", { account: nimdok });
+
+    const transferReceipt = await this.contract.transfer(owner, web3.utils.toWei("1", "ether"), { from: nimdok });
+    expectEvent(transferReceipt, "Transfer", {
+        sender: nimdok,
+        recipient: owner,
+        amount: web3.utils.toWei("1", "ether")
+    });
+  });
 
   //   it.todo("is mintable");
 
@@ -216,6 +226,55 @@ describe("StableCoin", () => {
     expect(
       (await this.contract.balanceOf(nimdok)) == web3.utils.toWei("1", "ether")
     );
+  });
+
+  it("is pausable", async () => {
+    await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
+    await this.contract.setKycPassed(ultron, { from: assetProtectionManager });
+    await this.contract.setKycPassed(erasmus, { from: assetProtectionManager });
+    await this.contract.transfer(ultron, web3.utils.toWei("10", "ether"), {
+      from: supplyManager,
+    });
+    await this.contract.transfer(nimdok, web3.utils.toWei("5", "ether"), {
+        from: ultron
+    });
+    await this.contract.transfer(erasmus, web3.utils.toWei("1", "ether"), {
+        from: nimdok
+    });
+
+    // CEASE
+    const pauseReceipt = await this.contract.pause({ from: assetProtectionManager });
+    expectEvent(pauseReceipt, "Pause", { sender: assetProtectionManager });
+
+    const transfer1st = this.contract.transfer(nimdok, web3.utils.toWei("1", "ether"), {
+        from: ultron
+    });
+    const transfer2nd = this.contract.transfer(ultron, web3.utils.toWei("1", "ether"), {
+        from: erasmus
+    });
+    expectRevert(transfer1st, "Contract paused, cannot continue.");
+    expectRevert(transfer2nd, "Contract paused, cannot continue.");
+    
+    // mk
+    const unpauseReceipt = await this.contract.unpause({ from: assetProtectionManager });
+    expectEvent(unpauseReceipt, "Unpause", { sender: assetProtectionManager });
+
+    const transfer3rdReceipt = await this.contract.transfer(nimdok, web3.utils.toWei("1", "ether"), {
+        from: ultron
+    });
+    const transfer4thReceipt = await this.contract.transfer(ultron, web3.utils.toWei("1", "ether"), {
+        from: erasmus
+    });
+    expectEvent(transfer3rdReceipt, "Transfer", {
+        sender: ultron,
+        recipient: nimdok,
+        amount: web3.utils.toWei("1", "ether")
+    });
+    expectEvent(transfer4thReceipt, "Transfer", {
+        sender: erasmus,
+        recipient: ultron,
+        amount: web3.utils.toWei("1", "ether")
+    });
   });
 
     //   it.todo("is delegable");
