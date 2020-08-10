@@ -38,6 +38,7 @@ contract StableCoin is
     event Wipe(address account, uint256 amount);
     event Mint(address account, uint256 amount);
     event Burn(address account, uint256 amount);
+    event Transfer(address sender, address recipient, uint256 amount);
     event Approve(address sender, address spender, uint256 amount);
     event IncreaseAllowance(address sender, address spender, uint256 amount);
     event DecreaseAllowance(address sender, address spender, uint256 amount);
@@ -241,7 +242,7 @@ contract StableCoin is
         emit Unfreeze(account);
     }
 
-    // Check Transfer Allowed
+    // Check Transfer Allowed (user facing)
     function checkTransferAllowed(address account) public view returns (bool) {
         return isKycPassed(account) && !isFrozen(account);
     }
@@ -256,41 +257,6 @@ contract StableCoin is
     function unpause() private onlyAssetProtectionManager {
         _unpause();
         emit Unpause(_msgSender());
-    }
-
-    // Check Transfer Allowed
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override(ERC20UpgradeSafe) requiresKYC requiresNotFrozen {
-        if ((from == supplyManager() || from == owner()) && to == address(0)) {
-            // allowed burn
-            require(!paused(), "Contract paused, cannot continue.");
-            super._beforeTokenTransfer(from, to, amount);
-            return;
-        }
-
-        if ((to == supplyManager() || to == owner()) && from == address(0)) {
-            // allowed mint
-            require(!paused(), "Contract paused, cannot continue.");
-            super._beforeTokenTransfer(from, to, amount);
-            return;
-        }
-
-        // All other transfers
-        require(isKycPassed(from), "Sender requires KYC to continue.");
-        require(isKycPassed(to), "Receiver requires KYC to continue.");
-        require(!isFrozen(from), "Sender account is frozen.");
-        require(!isFrozen(to), "Receiver account is frozen.");
-        require(
-            _msgSender() == owner() ||
-                _msgSender() == supplyManager() ||
-                to != address(0),
-            "Only the supply manager can burn coins, cannot transfer to 0x0."
-        ); // Only owner and supplyManager can burn coins
-        require(!paused(), "Contract paused, cannot continue.");
-        super._beforeTokenTransfer(from, to, amount); // callbacks from above (if any)
     }
 
     // Claim Ownership
@@ -331,14 +297,58 @@ contract StableCoin is
         emit Burn(_msgSender(), amount);
     }
 
+    // Check Transfer Allowed (internal)
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override(ERC20UpgradeSafe) requiresKYC requiresNotFrozen {
+        if ((from == supplyManager() || from == owner()) && to == address(0)) {
+            // allowed burn
+            require(!paused(), "Contract paused, cannot continue.");
+            super._beforeTokenTransfer(from, to, amount);
+            return;
+        }
+
+        if ((to == supplyManager() || to == owner()) && from == address(0)) {
+            // allowed mint
+            require(!paused(), "Contract paused, cannot continue.");
+            super._beforeTokenTransfer(from, to, amount);
+            return;
+        }
+
+        // All other transfers
+        require(isKycPassed(from), "Sender requires KYC to continue.");
+        require(isKycPassed(to), "Receiver requires KYC to continue.");
+        require(!isFrozen(from), "Sender account is frozen.");
+        require(!isFrozen(to), "Receiver account is frozen.");
+        require(
+            _msgSender() == owner() ||
+                _msgSender() == supplyManager() ||
+                to != address(0),
+            "Only the supply manager can burn coins, cannot transfer to 0x0."
+        ); // Only owner and supplyManager can burn coins
+        require(!paused(), "Contract paused, cannot continue.");
+        super._beforeTokenTransfer(from, to, amount); // callbacks from above (if any)
+    }
+
     // Transfer
     function transfer(address to, uint256 amount)
         public
         override(ERC20UpgradeSafe)
         returns (bool)
     {
-        super._transfer(_msgSender(), to, amount); // emits Transfer
+        _transfer(_msgSender(), to, amount); // emits Transfer
         return true;
+    }
+
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) internal override(ERC20UpgradeSafe) requiresKYC requiresNotFrozen {
+        super._transfer(sender, recipient, amount);
+        emit Transfer(sender, recipient, amount); // Override just for named params
     }
 
     // Transfer From (transfer between allowances)

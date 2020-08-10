@@ -185,6 +185,12 @@ describe("StableCoin", () => {
     );
   });
 
+    //   it.todo("is pausable");
+
+  //   it.todo("is mintable");
+
+  //   it.todo("is burnable");
+
   it("is transferrable", async () => {
     await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
     await this.contract.setKycPassed(ultron, { from: assetProtectionManager });
@@ -197,29 +203,24 @@ describe("StableCoin", () => {
       web3.utils.toWei("1", "ether"),
       { from: ultron }
     );
- 
-    expectEvent(transferReceipt, "Transfer", [
-      ultron,
-      nimdok,
-      web3.utils.toWei("1", "ether"),
-    ]);
+
+    expectEvent(transferReceipt, "Transfer", {
+      sender: ultron,
+      recipient: nimdok,
+      amount: web3.utils.toWei("1", "ether"),
+    });
     expect(
+      // Note: No Gas
       (await this.contract.balanceOf(ultron)) == web3.utils.toWei("9", "ether")
     );
     expect(
-        (await this.contract.balanceOf(nimdok)) == web3.utils.toWei("1", "ether")
+      (await this.contract.balanceOf(nimdok)) == web3.utils.toWei("1", "ether")
     );
   });
 
-  //   it.todo("is mintable");
-
-  //   it.todo("is burnable");
+    //   it.todo("is delegable");
 
   //   it.todo("can wipe accounts");
-
-  //   it.todo("is delegable");
-
-  //   it.todo("is pausable");
 
   afterEach(() => {
     this.contract = null;
