@@ -197,7 +197,35 @@ describe("StableCoin", () => {
     });
   });
 
-  //   it.todo("is mintable");
+  it("is mintable", async () => {
+      expectRevert(
+          this.contract.mint(web3.utils.toWei("10", "ether"), { from: nimdok }),
+          "Only the supply manager can call this function."
+      );
+      await this.contract.mint(web3.utils.toWei("100", "ether"), { from: owner });
+      await this.contract.mint(web3.utils.toWei("10", "ether"), { from: supplyManager });
+      expect(
+          (await this.contract.totalSupply()) == web3.utils.toWei("410", "ether")
+      );
+      expect(
+          (await this.contract.totalSupply()) == (await this.contract.balanceOf(supplyManager))
+      );
+  });
+
+  it("is burnable", async () => {
+      expectRevert(
+          this.contract.burn(web3.utils.toWei("10", "ether"), { from: nimdok }),
+          "Only the supply manager can call this function."
+      );
+      await this.contract.burn(web3.utils.toWei("100", "ether"), { from: supplyManager });
+      await this.contract.burn(web3.utils.toWei("10", "ether"), { from: owner });
+      expect(
+          (await this.contract.totalSupply()) == web3.utils.toWei("190", "ether")
+      );
+      expect(
+          (await this.contract.totalSupply()) == (await this.contract.balanceOf(supplyManager))
+      );
+  });
 
   //   it.todo("is burnable");
 

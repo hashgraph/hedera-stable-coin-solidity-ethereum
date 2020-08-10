@@ -286,14 +286,14 @@ contract StableCoin is
     }
 
     // Mint
-    function mint(uint256 amount) private onlySupplyManager {
+    function mint(uint256 amount) public onlySupplyManager {
         _mint(supplyManager(), amount); // emits Transfer
         emit Mint(_msgSender(), amount);
     }
 
     // Burn
-    function burn(uint256 amount) private onlySupplyManager {
-        _burn(_msgSender(), amount); // emits Transfer
+    function burn(uint256 amount) public onlySupplyManager {
+        _burn(_supplyManager, amount); // emits Transfer
         emit Burn(_msgSender(), amount);
     }
 
