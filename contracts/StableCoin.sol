@@ -170,6 +170,18 @@ contract StableCoin is
             account == owner();
     }
 
+    function renounceRole(bytes32 role, address account)
+        public
+        requiresKYC
+        requiresNotFrozen
+    {
+        require(
+            !isPrivilegedRole(_msgSender()) || _msgSender() == owner(),
+            "Priviledged roles cannot be self-revoked"
+        );
+        super.renounceRole(role, account);
+    }
+
     modifier requiresKYC() {
         require(
             hasRole(KYC_PASSED, _msgSender()),

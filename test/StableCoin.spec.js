@@ -126,9 +126,16 @@ describe("StableCoin", () => {
       expect(this.contract.assetProtectionManager() == nimdok);
   });
 
-  it.todo("can freeze accounts");
+  it("can set KYC for accounts", async () => {
+      const kycReceipt = await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
+      expectEvent(kycReceipt, "SetKycPassed", { account: nimdok });
+      expect((await this.contract.getRoleMemberCount(kycPassedRole, { from: owner })) == 4);
+      expect((await this.contract.get))
+  });
 
-  it.todo("can set KYC for accounts");
+  it("can freeze accounts", async () => {
+      const freezeReceipt = await this.contract.freeze(nimdok);
+  });
 
   it.todo("is transferrable");
   
@@ -140,7 +147,7 @@ describe("StableCoin", () => {
 
   it.todo("is delegable");
 
-  it.todo("takes snapshots");
+  it.todo("is pausable");
 
   afterEach(() => {
     this.contract = null;
