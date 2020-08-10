@@ -4,7 +4,7 @@ pragma solidity >=0.4.21 <0.7.0;
 import "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20Snapshot.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol";
 
 import "./Ownable.sol";
 
@@ -14,7 +14,7 @@ contract StableCoin is
     PausableUpgradeSafe,
     OwnableUpgradeSafe,
     AccessControlUpgradeSafe,
-    ERC20SnapshotUpgradeSafe
+    ERC20UpgradeSafe
 {
     using SafeMath for uint256;
 
@@ -77,7 +77,6 @@ contract StableCoin is
         // Initialize token functionality
         __ERC20_init_unchained(tokenName, tokenSymbol);
         __Pausable_init_unchained();
-        __ERC20Snapshot_init_unchained();
         _setupDecimals(tokenDecimal);
 
         // Give supply manager all tokens

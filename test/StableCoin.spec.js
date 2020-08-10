@@ -39,7 +39,7 @@ describe("StableCoin", () => {
     );
   });
 
-  it("initializes w/ expected state", async () => {
+  it("initializes with expected state", async () => {
     expect((await this.contract.owner()) == owner);
     expect((await this.contract.supplyManager()) == supplyManager);
     expect(
@@ -125,6 +125,22 @@ describe("StableCoin", () => {
       expectEvent(changeReceipt, "ChangeAssetProtectionManager", { newAssetProtectionManager: nimdok });
       expect(this.contract.assetProtectionManager() == nimdok);
   });
+
+  it.todo("can freeze accounts");
+
+  it.todo("can set KYC for accounts");
+
+  it.todo("is transferrable");
+  
+  it.todo("is mintable");
+
+  it.todo("is burnable");
+
+  it.todo("can wipe accounts");
+
+  it.todo("is delegable");
+
+  it.todo("takes snapshots");
 
   afterEach(() => {
     this.contract = null;
