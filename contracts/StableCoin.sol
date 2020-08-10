@@ -339,6 +339,7 @@ contract StableCoin is
         returns (bool)
     {
         _transfer(_msgSender(), to, amount); // emits Transfer
+        emit Transfer(_msgSender(), to, amount); // named fields
         return true;
     }
 
