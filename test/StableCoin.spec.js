@@ -13,12 +13,12 @@ const StableCoin = contract.fromArtifact("StableCoin");
 describe("StableCoin", () => {
   this.contract = null;
 
-  const [squidward, skynet, rand_paul, nimdok] = accounts; // get accounts from test utils
+  const [squidward, skynet, rand_paul, nimdok, ultron] = accounts; // get accounts from test utils
 
   // Contract Information
   const name = "Bikini Bottom Bux";
   const symbol = "~*~";
-  const decimals = 18;  // same as ether <-> wei for convenience
+  const decimals = 18; // same as ether <-> wei for convenience
   const totalSupply = web3.utils.toWei("300", "ether"); // 300 BBB in circulation
   const owner = skynet;
   const supplyManager = squidward;
@@ -102,60 +102,124 @@ describe("StableCoin", () => {
   });
 
   it("can change supply manager", async () => {
-      expectRevert(
-          this.contract.changeSupplyManager(nimdok, { from: nimdok }),
-          "Only the owner can call this function"
-      );
+    expectRevert(
+      this.contract.changeSupplyManager(nimdok, { from: nimdok }),
+      "Only the owner can call this function"
+    );
 
-      const changeReceipt = await this.contract.changeSupplyManager(nimdok, { from: owner });
-      
-      expectEvent(changeReceipt, "ChangeSupplyManager", { newSupplyManager: nimdok });
-      expect(this.contract.supplyManager() == nimdok);
+    const changeReceipt = await this.contract.changeSupplyManager(nimdok, {
+      from: owner,
+    });
+
+    expectEvent(changeReceipt, "ChangeSupplyManager", {
+      newSupplyManager: nimdok,
+    });
+    expect(this.contract.supplyManager() == nimdok);
   });
 
   it("can change asset protection manager", async () => {
-      expectRevert(
-          this.contract.changeAssetProtectionManager(nimdok, { from: nimdok }),
-          "Only the owner can call this function."
-      );
+    expectRevert(
+      this.contract.changeAssetProtectionManager(nimdok, { from: nimdok }),
+      "Only the owner can call this function."
+    );
 
-      const changeReceipt = await this.contract.changeAssetProtectionManager(nimdok, { from: owner });
-      
-      expectEvent(changeReceipt, "ChangeAssetProtectionManager", { newAssetProtectionManager: nimdok });
-      expect(this.contract.assetProtectionManager() == nimdok);
+    const changeReceipt = await this.contract.changeAssetProtectionManager(
+      nimdok,
+      { from: owner }
+    );
+
+    expectEvent(changeReceipt, "ChangeAssetProtectionManager", {
+      newAssetProtectionManager: nimdok,
+    });
+    expect(this.contract.assetProtectionManager() == nimdok);
   });
 
   it("can set KYC for accounts", async () => {
-      const kycReceipt = await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
-      expectEvent(kycReceipt, "SetKycPassed", { account: nimdok });
-      expect((await this.contract.getRoleMemberCount(kycPassedRole, { from: owner })) == 4);
-      expect((await this.contract.hasRole(kycPassedRole, nimdok, { from: owner })));
-      
-      const unkycReceipt = await this.contract.unsetKycPassed(nimdok, { from: assetProtectionManager });
-      expectEvent(unkycReceipt, "UnsetKycPassed", { account: nimdok });
-      expect((await this.contract.getRoleMemberCount(kycPassedRole, { from: owner })) == 3);
-      expect(!(await this.contract.hasRole(kycPassedRole, nimdok, { from: owner })));
+    const kycReceipt = await this.contract.setKycPassed(nimdok, {
+      from: assetProtectionManager,
+    });
+    expectEvent(kycReceipt, "SetKycPassed", { account: nimdok });
+    expect(
+      (await this.contract.getRoleMemberCount(kycPassedRole, {
+        from: owner,
+      })) == 4
+    );
+    expect(await this.contract.hasRole(kycPassedRole, nimdok, { from: owner }));
+
+    const unkycReceipt = await this.contract.unsetKycPassed(nimdok, {
+      from: assetProtectionManager,
+    });
+    expectEvent(unkycReceipt, "UnsetKycPassed", { account: nimdok });
+    expect(
+      (await this.contract.getRoleMemberCount(kycPassedRole, {
+        from: owner,
+      })) == 3
+    );
+    expect(
+      !(await this.contract.hasRole(kycPassedRole, nimdok, { from: owner }))
+    );
+    expectRevert(
+      this.contract.transfer(owner, web3.utils.toWei("5", "ether"), {
+        from: nimdok,
+      }),
+      "Calling this function requires KYC approval."
+    );
   });
 
   it("can freeze accounts", async () => {
-      await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
-      await this.contract.transfer(nimdok, web3.utils.toWei("10", "ether"), { from: supplyManager });
-      await this.contract.freeze(nimdok, { from: assetProtectionManager });
-      const transferReceipt = this.contract.transfer(owner, web3.utils.toWei("5", "ether"), { from: nimdok });
-      expectRevert(transferReceipt, "Your account has been frozen, cannot call function.");
+    await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
+    await this.contract.transfer(nimdok, web3.utils.toWei("10", "ether"), {
+      from: supplyManager,
+    });
+
+    const freezeReceipt = await this.contract.freeze(nimdok, {
+      from: assetProtectionManager,
+    });
+    expectEvent(freezeReceipt, "Freeze", { account: nimdok });
+
+    expectRevert(
+      this.contract.transfer(owner, web3.utils.toWei("5", "ether"), {
+        from: nimdok,
+      }),
+      "Your account has been frozen, cannot call function."
+    );
   });
 
-//   it.todo("is transferrable");
-  
-//   it.todo("is mintable");
+  it("is transferrable", async () => {
+    await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
+    await this.contract.setKycPassed(ultron, { from: assetProtectionManager });
+    await this.contract.transfer(ultron, web3.utils.toWei("10", "ether"), {
+      from: supplyManager,
+    });
 
-//   it.todo("is burnable");
+    const transferReceipt = await this.contract.transfer(
+      nimdok,
+      web3.utils.toWei("1", "ether"),
+      { from: ultron }
+    );
+ 
+    expectEvent(transferReceipt, "Transfer", [
+      ultron,
+      nimdok,
+      web3.utils.toWei("1", "ether"),
+    ]);
+    expect(
+      (await this.contract.balanceOf(ultron)) == web3.utils.toWei("9", "ether")
+    );
+    expect(
+        (await this.contract.balanceOf(nimdok)) == web3.utils.toWei("1", "ether")
+    );
+  });
 
-//   it.todo("can wipe accounts");
+  //   it.todo("is mintable");
 
-//   it.todo("is delegable");
+  //   it.todo("is burnable");
 
-//   it.todo("is pausable");
+  //   it.todo("can wipe accounts");
+
+  //   it.todo("is delegable");
+
+  //   it.todo("is pausable");
 
   afterEach(() => {
     this.contract = null;
