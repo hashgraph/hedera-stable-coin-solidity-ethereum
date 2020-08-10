@@ -74,9 +74,6 @@ contract StableCoin is
         grantRole(KYC_PASSED, supplyManager);
         grantRole(KYC_PASSED, assetProtectionManager);
 
-        // So mint and burn work
-        grantRole(KYC_PASSED, address(0));
-
         // Initialize token functionality
         __ERC20_init_unchained(tokenName, tokenSymbol);
         __Pausable_init_unchained();
@@ -253,6 +250,21 @@ contract StableCoin is
         address to,
         uint256 amount
     ) internal override(ERC20UpgradeSafe) requiresKYC requiresNotFrozen {
+        if ((from == supplyManager() || from == owner()) && to == address(0)) {
+            // allowed burn
+            require(!paused(), "Contract paused, cannot continue.");
+            super._beforeTokenTransfer(from, to, amount);
+            return;
+        }
+
+        if ((to == supplyManager() || to == owner()) && from == address(0)) {
+            // allowed mint
+            require(!paused(), "Contract paused, cannot continue.");
+            super._beforeTokenTransfer(from, to, amount);
+            return;
+        }
+
+        // All other transfers
         require(isKycPassed(from), "Sender requires KYC to continue.");
         require(isKycPassed(to), "Receiver requires KYC to continue.");
         require(!isFrozen(from), "Sender account is frozen.");
