@@ -129,6 +129,7 @@ contract StableCoin is
             newSupplyManager != address(0),
             "Cannot change supply manager to 0x0."
         );
+        revokeRole(KYC_PASSED, _supplyManager);
         _supplyManager = newSupplyManager;
         grantRole(KYC_PASSED, _supplyManager);
         revokeRole(FROZEN, _supplyManager);
@@ -155,6 +156,7 @@ contract StableCoin is
             newAssetProtectionManager != address(0),
             "Cannot change asset protection manager to 0x0."
         );
+        revokeRole(KYC_PASSED, _assetProtectionManager);
         _assetProtectionManager = newAssetProtectionManager;
         grantRole(KYC_PASSED, _assetProtectionManager);
         revokeRole(FROZEN, _assetProtectionManager);
@@ -286,10 +288,10 @@ contract StableCoin is
     {
         address prevOwner = owner();
         super.claimOwnership(); // emits ClaimOwnership
+        revokeRole(KYC_PASSED, prevOwner);
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         grantRole(KYC_PASSED, _msgSender());
         revokeRole(FROZEN, _msgSender());
-        revokeRole(KYC_PASSED, prevOwner);
     }
 
     // Wipe
