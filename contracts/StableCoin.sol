@@ -172,6 +172,7 @@ contract StableCoin is
 
     function renounceRole(bytes32 role, address account)
         public
+        override(AccessControlUpgradeSafe)
         requiresKYC
         requiresNotFrozen
     {
@@ -300,10 +301,10 @@ contract StableCoin is
     {
         address prevOwner = owner();
         super.claimOwnership(); // emits ClaimOwnership
-        revokeRole(KYC_PASSED, prevOwner);
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         grantRole(KYC_PASSED, _msgSender());
         revokeRole(FROZEN, _msgSender());
+        revokeRole(KYC_PASSED, prevOwner);
     }
 
     // Wipe

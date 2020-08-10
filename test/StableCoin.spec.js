@@ -130,24 +130,28 @@ describe("StableCoin", () => {
       const kycReceipt = await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
       expectEvent(kycReceipt, "SetKycPassed", { account: nimdok });
       expect((await this.contract.getRoleMemberCount(kycPassedRole, { from: owner })) == 4);
-      expect((await this.contract.get))
+      expect((await this.contract.hasRole(kycPassedRole, nimdok, { from: owner })));
+      const unkycReceipt = await this.contract.unsetKycPassed(nimdok, { from: assetProtectionManager });
+      expectEvent(unkycReceipt, "UnsetKycPassed", { account: nimdok });
+      expect((await this.contract.getRoleMemberCount(kycPassedRole, { from: owner })) == 3);
+      expect(!(await this.contract.hasRole(kycPassedRole, nimdok, { from: owner })));
   });
 
-  it("can freeze accounts", async () => {
-      const freezeReceipt = await this.contract.freeze(nimdok);
-  });
+//   it("can freeze accounts", async () => {
+//       const freezeReceipt = await this.contract.freeze(nimdok);
+//   });
 
-  it.todo("is transferrable");
+//   it.todo("is transferrable");
   
-  it.todo("is mintable");
+//   it.todo("is mintable");
 
-  it.todo("is burnable");
+//   it.todo("is burnable");
 
-  it.todo("can wipe accounts");
+//   it.todo("can wipe accounts");
 
-  it.todo("is delegable");
+//   it.todo("is delegable");
 
-  it.todo("is pausable");
+//   it.todo("is pausable");
 
   afterEach(() => {
     this.contract = null;
