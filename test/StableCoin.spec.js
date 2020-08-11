@@ -299,8 +299,8 @@ describe("StableCoin", () => {
         from: erasmus,
       }
     );
-    expectRevert(transfer1st, "Contract paused, cannot continue.");
-    expectRevert(transfer2nd, "Contract paused, cannot continue.");
+    expectRevert(transfer1st, "Pausable: paused");
+    expectRevert(transfer2nd, "Pausable: paused");
 
     // mk
     const unpauseReceipt = await this.contract.unpause({
@@ -382,6 +382,34 @@ describe("StableCoin", () => {
       spender: erasmus,
       amount: web3.utils.toWei("20", "ether"),
     });
+    
+    // Increase Allowance
+    const increaseReceipt = await this.contract.increaseAllowance(
+      erasmus,
+      web3.utils.toWei("10", "ether"),
+      { from: ultron }
+    );
+    expectEvent(increaseReceipt, "IncreaseAllowance", {
+      sender: ultron,
+      spender: erasmus,
+      amount: web3.utils.toWei("30", "ether"),
+    });
+
+    // Decrease Allowance
+    const decreaseReceipt = await this.contract.decreaseAllowance(
+      erasmus,
+      web3.utils.toWei("1", "ether"),
+      { from: ultron }
+    );
+    expectEvent(decreaseReceipt, "DecreaseAllowance", {
+      sender: ultron,
+      spender: erasmus,
+      amount: web3.utils.toWei("29", "ether"),
+    });
+    expect(
+      (await this.contract.allowance(ultron, erasmus)) ==
+        web3.utils.toWei("29", "ether")
+    );
 
     // erasmus tries to spend within allowance but more than ultron's balance
     expectRevert(

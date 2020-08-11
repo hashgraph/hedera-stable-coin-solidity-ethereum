@@ -396,12 +396,13 @@ contract StableCoin is
         returns (bool)
     {
         _beforeTokenAllowance(_msgSender(), spender);
+        uint256 newAllowance = allowance(_msgSender(), spender).add(amount);
         _approve(
             _msgSender(),
             spender,
-            allowance(_msgSender(), spender).add(amount)
+            newAllowance
         ); // emits Approval
-        emit IncreaseAllowance(_msgSender(), spender, amount);
+        emit IncreaseAllowance(_msgSender(), spender, newAllowance);
         return true;
     }
 
