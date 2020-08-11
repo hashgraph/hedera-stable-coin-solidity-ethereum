@@ -14,6 +14,11 @@
   },
   "scripts": {
     "compile": "oz compile --optimizer on",
-    "test": "mocha --exit --recursive test"
+    "test": "mocha --exit --recursive test",
+    "network:truffle": "truffle develop --log",
+    "network:ganache": "ganache-cli",
+    "deploy": "oz deploy",
+    "deploy:truffle": "oz deploy --network truffle --kind regular StableCoin",
+    "deploy:ganache": "oz deploy --network ganache --kind regular StableCoin"
   }
 }
