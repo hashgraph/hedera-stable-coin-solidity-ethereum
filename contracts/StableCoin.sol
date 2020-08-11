@@ -349,7 +349,19 @@ contract StableCoin is
         uint256 amount
     ) internal override(ERC20UpgradeSafe) requiresKYC requiresNotFrozen {
         super._transfer(sender, recipient, amount);
-        emit Transfer(sender, recipient, amount); // Override just for named params
+        emit Transfer(sender, recipient, amount); // Override for named params
+    }
+
+    // Allowances
+    function _beforeTokenAllowance(
+        address sender,
+        address spender
+    ) internal view {
+        require(isKycPassed(spender), "Spender requires KYC to continue.");
+        require(isKycPassed(sender), "Sender requires KYC to continue.");
+        require(!isFrozen(spender), "Spender account is frozen.");
+        require(!isFrozen(sender), "Sender account is frozen.");
+        require(spender != address(0), "Cannot set allowance for 0x0.");
     }
 
     // Transfer From (transfer between allowances)
@@ -357,7 +369,14 @@ contract StableCoin is
         address from,
         address to,
         uint256 amount
-    ) public override(ERC20UpgradeSafe) returns (bool) {
+    )
+        public
+        override(ERC20UpgradeSafe)
+        requiresKYC
+        requiresNotFrozen
+        returns (bool)
+    {
+        _beforeTokenAllowance(from, to);
         bool result = super.transferFrom(from, to, amount); // emits Transfer, Approval
         if (result)
             emit Approve(from, to, allowance(from, _msgSender()).sub(amount));
@@ -365,17 +384,35 @@ contract StableCoin is
     }
 
     // Approve Allowance
-    function approveAllowance(address spender, uint256 amount) private {
-        super._approve(_msgSender(), spender, amount); // emits Approval
+    function approveAllowance(address spender, uint256 amount)
+        public
+        requiresKYC
+        requiresNotFrozen
+    {
+        _beforeTokenAllowance(_msgSender(), spender);
+        super._approve(_msgSender(), spender, amount); // emits Approval([])
         emit Approve(_msgSender(), spender, amount);
+    }
+
+    // convenience
+    function approve(address spender, uint256 amount)
+        public
+        override(ERC20UpgradeSafe)
+        returns (bool)
+    {
+        approveAllowance(spender, amount);
+        return true;
     }
 
     // Increase Allowance
     function increaseAllowance(address spender, uint256 amount)
         public
         override(ERC20UpgradeSafe)
+        requiresKYC
+        requiresNotFrozen
         returns (bool)
     {
+        _beforeTokenAllowance(_msgSender(), spender);
         _approve(
             _msgSender(),
             spender,
@@ -389,15 +426,17 @@ contract StableCoin is
     function decreaseAllowance(address spender, uint256 amount)
         public
         override(ERC20UpgradeSafe)
+        requiresKYC
+        requiresNotFrozen
         returns (bool)
     {
+        _beforeTokenAllowance(_msgSender(), spender);
         uint256 newAllowance = allowance(_msgSender(), spender).sub(
             amount,
             "Amount greater than allowance."
         );
-        uint256 diff = allowance(_msgSender(), spender).sub(newAllowance);
         _approve(_msgSender(), spender, newAllowance); // emits Approval
-        emit DecreaseAllowance(_msgSender(), spender, diff);
+        emit DecreaseAllowance(_msgSender(), spender, newAllowance);
         return true;
     }
 
