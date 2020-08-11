@@ -22,13 +22,15 @@ You'll need Yarn, the Open Zeppelin CLI and the Truffle Suite to set up the deve
 
 - `yarn` installs dependencies
 
-- `yarn compile` uses the openzeppelin cli to compile the solidity contracts.
+- `yarn oz compile` uses the openzeppelin cli (**and oz sdk**) to compile the solidity contracts.
+
+- `yarn truffle compile` uses truffle to compile the solidity contracts
 
 - `yarn test` runs mocha/chai/oz tests inside of a managed test environment
 
-- `yarn network:truffle` sets up the local truffle development network
+- `yarn network:truffle` sets up the local development network via truffle
 
-- `yarn network:ganache` sets up the local ganache development network
+- `yarn network:ganache` sets up the local development network via ganache cli
 
 - `yarn deploy` runs the openzeppelin deployment in interactive mode
 

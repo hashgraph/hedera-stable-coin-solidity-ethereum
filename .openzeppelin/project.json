@@ -1,29 +1,25 @@
 {
   "manifestVersion": "2.2",
-  "contracts": {
-    "Hbar": "Hbar",
-    "Migrations": "Migrations",
-    "OwnableUpgradeSafe": "OwnableUpgradeSafe"
-  },
-  "name": "Hbar",
+  "name": "StableCoin",
   "version": "1.0.0",
   "compiler": {
+    "solcVersion": "0.6.8",
+    "manager": "openzeppelin",
+    "artifactsDir": "build/contracts",
+    "contractsDir": "contracts",
     "compilerSettings": {
       "optimizer": {
         "enabled": true,
-        "runs": "200"
+        "runs": "2000"
       }
     },
     "typechain": {
       "enabled": false
-    },
-    "manager": "openzeppelin",
-    "solcVersion": "0.6.8",
-    "artifactsDir": "build/contracts",
-    "contractsDir": "contracts"
+    }
   },
-  "telemetryOptIn": false,
-  "dependencies": {
-    "@openzeppelin/contracts-ethereum-package": "^3.0.0"
-  }
+  "contracts": {
+    "StableCoin": "StableCoin"
+  },
+  "dependencies": {},
+  "telemetryOptIn": false
 }

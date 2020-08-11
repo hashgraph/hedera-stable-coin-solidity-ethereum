@@ -12,10 +12,11 @@
     "chai": "^4.2.0",
     "ganache-cli": "^6.9.1",
     "mocha": "^8.1.0",
+    "solidity-coverage": "^0.7.9",
+    "truffle": "^5.1.39",
     "web3": "^1.2.11"
   },
   "scripts": {
-    "compile": "oz compile --optimizer on",
     "test": "mocha --exit --recursive test",
     "network:truffle": "truffle develop --log",
     "network:ganache": "ganache-cli",

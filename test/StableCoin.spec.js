@@ -27,7 +27,8 @@ describe("StableCoin", () => {
   const kycPassedRole = web3.utils.asciiToHex("KYC_PASSED");
 
   beforeEach(async () => {
-    this.contract = await StableCoin.new(
+    this.contract = await StableCoin.new({ from: owner });
+    await this.contract.init(
       name,
       symbol,
       decimals,
@@ -381,26 +382,31 @@ describe("StableCoin", () => {
       spender: erasmus,
       amount: web3.utils.toWei("20", "ether"),
     });
-    
+
     // erasmus tries to spend within allowance but more than ultron's balance
     expectRevert(
-      this.contract.transferFrom(ultron, nimdok, web3.utils.toWei("15", "ether"), {
-        from: erasmus,
-      }),
+      this.contract.transferFrom(
+        ultron,
+        nimdok,
+        web3.utils.toWei("15", "ether"),
+        {
+          from: erasmus,
+        }
+      ),
       "ERC20: transfer amount exceeds balance"
     );
 
     // erasmus can spend within allowance, less than ultron's balance
     const transferFromReceipt = await this.contract.transferFrom(
-        ultron,
-        nimdok,
-        web3.utils.toWei("1", "ether"),
-        { from: erasmus }
+      ultron,
+      nimdok,
+      web3.utils.toWei("1", "ether"),
+      { from: erasmus }
     );
     expectEvent(transferFromReceipt, "Transfer", {
-        sender: ultron,
-        recipient: nimdok,
-        amount: web3.utils.toWei("1", "ether")
+      sender: ultron,
+      recipient: nimdok,
+      amount: web3.utils.toWei("1", "ether"),
     });
   });
 
@@ -412,20 +418,26 @@ describe("StableCoin", () => {
     });
 
     expectRevert(
-        this.contract.wipe(ultron, { from: assetProtectionManager }),
-        "Account must be frozen prior to wipe."
+      this.contract.wipe(ultron, { from: assetProtectionManager }),
+      "Account must be frozen prior to wipe."
     );
 
     await this.contract.freeze(ultron, { from: assetProtectionManager });
-    const balance = await this.contract.balanceOf(ultron, { from: assetProtectionManager });
-    const wipeReceipt = await this.contract.wipe(ultron, { from: assetProtectionManager });
+    const balance = await this.contract.balanceOf(ultron, {
+      from: assetProtectionManager,
+    });
+    const wipeReceipt = await this.contract.wipe(ultron, {
+      from: assetProtectionManager,
+    });
     expectEvent(wipeReceipt, "Wipe", {
-        account: ultron,
-        amount: balance
+      account: ultron,
+      amount: balance,
     });
     await this.contract.unfreeze(ultron, { from: assetProtectionManager });
     expect((await this.contract.balanceOf(ultron, { from: ultron })) == 0);
-    expect((await this.contract.totalSupply()) == web3.utils.toWei("290", "ether"));
+    expect(
+      (await this.contract.totalSupply()) == web3.utils.toWei("290", "ether")
+    );
   });
 
   afterEach(() => {

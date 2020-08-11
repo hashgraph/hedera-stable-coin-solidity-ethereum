@@ -94,25 +94,6 @@ contract StableCoin is
         );
     }
 
-    // Non-"Upgradeable"
-    constructor(
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint8 tokenDecimal,
-        uint256 totalSupply,
-        address supplyManager,
-        address assetProtectionManager
-    ) public {
-        init(
-            tokenName,
-            tokenSymbol,
-            tokenDecimal,
-            totalSupply,
-            supplyManager,
-            assetProtectionManager
-        );
-    }
-
     function supplyManager() public view returns (address) {
         return _supplyManager;
     }
