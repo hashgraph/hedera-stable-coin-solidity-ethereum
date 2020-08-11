@@ -11,12 +11,7 @@ module.exports = {
       host: "127.0.0.1",
       port: 9545,
       network_id: "*",
-    },
-    soliditycoverage: {
-      host: "127.0.0.1",
-      network_id: "*",
-      port: 9545
-    },
+    }
   },
 
   compilers: {

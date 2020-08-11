@@ -487,13 +487,5 @@
       "runs": 2000
     },
     "evmVersion": "petersburg"
-  },
-  "networks": {
-    "5777": {
-      "events": {},
-      "links": {},
-      "address": "0x630593B58102c0758Cc3c81147D88DF975C9D511",
-      "transactionHash": "0x235fc7854a7ff82943fbb42037e6e5f36db0c147c758297de48dcf268ea3f2df"
-    }
   }
 }

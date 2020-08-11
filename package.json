@@ -12,7 +12,6 @@
     "chai": "^4.2.0",
     "ganache-cli": "^6.9.1",
     "mocha": "^8.1.0",
-    "solidity-coverage": "^0.7.9",
     "truffle": "^5.1.39",
     "web3": "^1.2.11"
   },
@@ -21,7 +20,7 @@
     "network:truffle": "truffle develop --log",
     "network:ganache": "ganache-cli",
     "deploy": "oz deploy",
-    "deploy:truffle": "oz deploy --network truffle --kind regular StableCoin",
-    "deploy:ganache": "oz deploy --network ganache --kind regular StableCoin"
+    "deploy:truffle": "oz deploy --network truffle --kind upgradeable StableCoin",
+    "deploy:ganache": "oz deploy --network ganache --kind upgradeable StableCoin"
   }
 }
