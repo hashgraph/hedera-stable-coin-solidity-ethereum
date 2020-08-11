@@ -404,7 +404,29 @@ describe("StableCoin", () => {
     });
   });
 
-  //   it.todo("can wipe accounts");
+  it("can wipe accounts", async () => {
+    await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
+    await this.contract.setKycPassed(ultron, { from: assetProtectionManager });
+    await this.contract.transfer(ultron, web3.utils.toWei("10", "ether"), {
+      from: supplyManager,
+    });
+
+    expectRevert(
+        this.contract.wipe(ultron, { from: assetProtectionManager }),
+        "Account must be frozen prior to wipe."
+    );
+
+    await this.contract.freeze(ultron, { from: assetProtectionManager });
+    const balance = await this.contract.balanceOf(ultron, { from: assetProtectionManager });
+    const wipeReceipt = await this.contract.wipe(ultron, { from: assetProtectionManager });
+    expectEvent(wipeReceipt, "Wipe", {
+        account: ultron,
+        amount: balance
+    });
+    await this.contract.unfreeze(ultron, { from: assetProtectionManager });
+    expect((await this.contract.balanceOf(ultron, { from: ultron })) == 0);
+    expect((await this.contract.totalSupply()) == web3.utils.toWei("290", "ether"));
+  });
 
   afterEach(() => {
     this.contract = null;

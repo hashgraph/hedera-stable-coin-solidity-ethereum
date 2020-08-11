@@ -274,14 +274,13 @@ contract StableCoin is
     }
 
     // Wipe
-    function wipe(address account) private onlyAssetProtectionManager {
+    function wipe(address account) public onlyAssetProtectionManager {
         require(
             hasRole(FROZEN, account),
             "Account must be frozen prior to wipe."
         );
         uint256 balance = balanceOf(account);
-        _transfer(account, supplyManager(), balance); // emits Transfer
-        burn(balance); // emits Transfer, Burn
+        _burn(account, balance); // emits Transfer
         emit Wipe(account, balance);
     }
 
@@ -303,13 +302,15 @@ contract StableCoin is
         address to,
         uint256 amount
     ) internal override(ERC20UpgradeSafe) requiresKYC requiresNotFrozen {
-        if ((from == supplyManager() || from == owner()) && to == address(0)) {
+        // Note: ERC20 checks if to == address(0) during _transfer
+        if (isPrivilegedRole(_msgSender()) && to == address(0)) {
             // allowed burn
             require(!paused(), "Contract paused, cannot continue.");
             super._beforeTokenTransfer(from, to, amount);
             return;
         }
 
+        // Note: ERC20 checks to == address(0) during _transfer
         if ((to == supplyManager() || to == owner()) && from == address(0)) {
             // allowed mint
             require(!paused(), "Contract paused, cannot continue.");
@@ -378,7 +379,7 @@ contract StableCoin is
         _beforeTokenAllowance(from, to);
         bool result = super.transferFrom(from, to, amount); // emits Transfer, Approval
         if (result)
-            emit Approve(from, to, allowance(from, _msgSender()).sub(amount));
+            emit Approve(from, to, allowance(from, _msgSender()));
         return result;
     }
 
