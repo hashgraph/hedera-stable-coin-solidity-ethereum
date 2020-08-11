@@ -9,14 +9,14 @@ import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol
 import "./Ownable.sol";
 
 contract StableCoin is
-    Initializable,
-    ContextUpgradeSafe,
-    PausableUpgradeSafe,
-    OwnableUpgradeSafe,
-    AccessControlUpgradeSafe,
-    ERC20UpgradeSafe
+    Initializable, // has an initializer instead of constructor
+    ContextUpgradeSafe, // provides _msgSender(), _msgData()
+    PausableUpgradeSafe, // provides _pause(), _unpause()
+    OwnableUpgradeSafe, // Ownable, Claimable
+    AccessControlUpgradeSafe, // RBAC for KYC, Frozen
+    ERC20UpgradeSafe // ERC20 Functions
 {
-    using SafeMath for uint256;
+    using SafeMath for uint256; // reverts on failed math operations
 
     bytes32 private constant KYC_PASSED = keccak256("KYC_PASSED");
     bytes32 private constant FROZEN = keccak256("FROZEN");
@@ -282,11 +282,16 @@ contract StableCoin is
         address from,
         address to,
         uint256 amount
-    ) internal override(ERC20UpgradeSafe) requiresKYC requiresNotFrozen {
+    )
+        internal
+        override(ERC20UpgradeSafe)
+        requiresKYC
+        requiresNotFrozen
+        whenNotPaused
+    {
         // Note: ERC20 checks if to == address(0) during _transfer
         if (isPrivilegedRole(_msgSender()) && to == address(0)) {
             // allowed burn
-            require(!paused(), "Contract paused, cannot continue.");
             super._beforeTokenTransfer(from, to, amount);
             return;
         }
@@ -294,7 +299,6 @@ contract StableCoin is
         // Note: ERC20 checks to == address(0) during _transfer
         if ((to == supplyManager() || to == owner()) && from == address(0)) {
             // allowed mint
-            require(!paused(), "Contract paused, cannot continue.");
             super._beforeTokenTransfer(from, to, amount);
             return;
         }
@@ -310,19 +314,7 @@ contract StableCoin is
                 to != address(0),
             "Only the supply manager can burn coins, cannot transfer to 0x0."
         ); // Only owner and supplyManager can burn coins
-        require(!paused(), "Contract paused, cannot continue.");
         super._beforeTokenTransfer(from, to, amount); // callbacks from above (if any)
-    }
-
-    // Transfer
-    function transfer(address to, uint256 amount)
-        public
-        override(ERC20UpgradeSafe)
-        returns (bool)
-    {
-        _transfer(_msgSender(), to, amount); // emits Transfer([])
-        emit Transfer(_msgSender(), to, amount); // named fields
-        return true;
     }
 
     function _transfer(
@@ -334,11 +326,22 @@ contract StableCoin is
         emit Transfer(sender, recipient, amount); // Override for named params
     }
 
+    // Transfer
+    function transfer(address to, uint256 amount)
+        public
+        override(ERC20UpgradeSafe)
+        returns (bool)
+    {
+        _transfer(_msgSender(), to, amount); // emits Transfer([])
+        return true;
+    }
+
     // Allowances
-    function _beforeTokenAllowance(
-        address sender,
-        address spender
-    ) internal view {
+    function _beforeTokenAllowance(address sender, address spender)
+        internal
+        view
+        whenNotPaused
+    {
         require(isKycPassed(spender), "Spender requires KYC to continue.");
         require(isKycPassed(sender), "Sender requires KYC to continue.");
         require(!isFrozen(spender), "Spender account is frozen.");
@@ -359,8 +362,7 @@ contract StableCoin is
     {
         _beforeTokenAllowance(from, to);
         bool result = super.transferFrom(from, to, amount); // emits Transfer, Approval
-        if (result)
-            emit Approve(from, to, allowance(from, _msgSender()));
+        if (result) emit Approve(from, to, allowance(from, _msgSender()));
         return result;
     }
 

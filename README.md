@@ -1,4 +1,4 @@
-### Hbar Smart Contract
+### StableCoin Smart Contract
 
 ERC20 Externally Minted Token with Access Control
 
@@ -40,8 +40,10 @@ You'll need Yarn, the Open Zeppelin CLI and the Truffle Suite to set up the deve
 
 Network information is defined in truffle-config.js, which is read by openzeppelin CLI automatically.
 
+SOLC 0.6.8 used as compiler for both the oz sdk and truffle
+
 ##### Contract
 
-- ERC20, Ownable, Claimable, Pausable, Initializable
+- ERC20, Ownable, Claimable, Pausable, [Initializable](https://docs.openzeppelin.com/upgrades/2.6/writing-upgradeable)
 
 - RBAC for Supply, Asset Protection, KYC, Frozen

@@ -4,8 +4,6 @@ pragma solidity >=0.4.21 <0.7.0;
 import "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
 
-// Owner: Propose Account becomes Owner
-// Account: Claims Ownership if previously proposed to be owner
 contract OwnableUpgradeSafe is Initializable, ContextUpgradeSafe {
     address private _owner;
     address private _proposedOwner;
