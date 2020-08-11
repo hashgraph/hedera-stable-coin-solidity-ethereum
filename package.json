@@ -1,5 +1,5 @@
 {
-  "name": "StableCoin",
+  "name": "stable_coin",
   "license": "MIT",
   "dependencies": {
     "@openzeppelin/cli": "^2.8.2",
