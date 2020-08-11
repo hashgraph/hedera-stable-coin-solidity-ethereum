@@ -361,7 +361,6 @@ contract StableCoin is
         require(isKycPassed(sender), "Sender requires KYC to continue.");
         require(!isFrozen(spender), "Spender account is frozen.");
         require(!isFrozen(sender), "Sender account is frozen.");
-        require(spender != address(0), "Cannot set allowance for 0x0.");
     }
 
     // Transfer From (transfer between allowances)

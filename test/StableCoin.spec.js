@@ -358,11 +358,50 @@ describe("StableCoin", () => {
       "Spender requires KYC to continue."
     );
     expectRevert(
-        this.contract.approveAllowance(rand_paul, web3.utils.toWei("1", "ether"), {
-            from: erasmus
-        }),
-        "Sender requires KYC to continue."
+      this.contract.approveAllowance(
+        rand_paul,
+        web3.utils.toWei("1", "ether"),
+        {
+          from: erasmus,
+        }
+      ),
+      "Calling this function requires KYC approval."
     );
+
+    await this.contract.setKycPassed(erasmus, { from: assetProtectionManager });
+    const delegate2ndReceipt = await this.contract.approveAllowance(
+      erasmus,
+      web3.utils.toWei("20", "ether"),
+      {
+        from: ultron,
+      }
+    );
+    expectEvent(delegate2ndReceipt, "Approve", {
+      sender: ultron,
+      spender: erasmus,
+      amount: web3.utils.toWei("20", "ether"),
+    });
+    
+    // erasmus tries to spend within allowance but more than ultron's balance
+    expectRevert(
+      this.contract.transferFrom(ultron, nimdok, web3.utils.toWei("15", "ether"), {
+        from: erasmus,
+      }),
+      "ERC20: transfer amount exceeds balance"
+    );
+
+    // erasmus can spend within allowance, less than ultron's balance
+    const transferFromReceipt = await this.contract.transferFrom(
+        ultron,
+        nimdok,
+        web3.utils.toWei("1", "ether"),
+        { from: erasmus }
+    );
+    expectEvent(transferFromReceipt, "Transfer", {
+        sender: ultron,
+        recipient: nimdok,
+        amount: web3.utils.toWei("1", "ether")
+    });
   });
 
   //   it.todo("can wipe accounts");

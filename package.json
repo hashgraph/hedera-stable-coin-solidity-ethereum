@@ -13,6 +13,7 @@
     "web3": "^1.2.11"
   },
   "scripts": {
+    "compile": "oz compile --optimizer on",
     "test": "mocha --exit --recursive test"
   }
 }
