@@ -261,19 +261,20 @@ contract StableCoin is
             "Account must be frozen prior to wipe."
         );
         uint256 balance = balanceOf(account);
-        _burn(account, balance); // emits Transfer
+        super._transfer(account, _supplyManager, balance); // emits Transfer([])
+        _burn(_supplyManager, balance); // emits Transfer([])
         emit Wipe(account, balance);
     }
 
     // Mint
     function mint(uint256 amount) public onlySupplyManager {
-        _mint(supplyManager(), amount); // emits Transfer
+        _mint(supplyManager(), amount); // emits Transfer([])
         emit Mint(_msgSender(), amount);
     }
 
     // Burn
     function burn(uint256 amount) public onlySupplyManager {
-        _burn(_supplyManager, amount); // emits Transfer
+        _burn(_supplyManager, amount); // emits Transfer([])
         emit Burn(_msgSender(), amount);
     }
 
@@ -289,16 +290,20 @@ contract StableCoin is
         requiresNotFrozen
         whenNotPaused
     {
-        // Note: ERC20 checks if to == address(0) during _transfer
-        if (isPrivilegedRole(_msgSender()) && to == address(0)) {
-            // allowed burn
+        if (from == supplyManager() && to == address(0)) {
+            // allowed (burn)
             super._beforeTokenTransfer(from, to, amount);
             return;
         }
 
-        // Note: ERC20 checks to == address(0) during _transfer
-        if ((to == supplyManager() || to == owner()) && from == address(0)) {
-            // allowed mint
+        if (to == supplyManager() && from == address(0)) {
+            // allowed (mint)
+            super._beforeTokenTransfer(from, to, amount);
+            return;
+        }
+
+        if (to == supplyManager() && hasRole(FROZEN, from) && amount == balanceOf(from)) {
+            // allowed (wipe account)
             super._beforeTokenTransfer(from, to, amount);
             return;
         }
@@ -317,22 +322,14 @@ contract StableCoin is
         super._beforeTokenTransfer(from, to, amount); // callbacks from above (if any)
     }
 
-    function _transfer(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) internal override(ERC20UpgradeSafe) requiresKYC requiresNotFrozen {
-        super._transfer(sender, recipient, amount);
-        emit Transfer(sender, recipient, amount); // Override for named params
-    }
-
     // Transfer
     function transfer(address to, uint256 amount)
         public
         override(ERC20UpgradeSafe)
         returns (bool)
     {
-        _transfer(_msgSender(), to, amount); // emits Transfer([])
+        super._transfer(_msgSender(), to, amount); // emits Transfer([])
+        emit Transfer(sender, recipient, amount); // named params
         return true;
     }
 
@@ -348,7 +345,7 @@ contract StableCoin is
         require(!isFrozen(sender), "Sender account is frozen.");
     }
 
-    // Transfer From (transfer between allowances)
+    // Transfer From (allowance --> user)
     function transferFrom(
         address from,
         address to,
@@ -361,7 +358,7 @@ contract StableCoin is
         returns (bool)
     {
         _beforeTokenAllowance(from, to);
-        bool result = super.transferFrom(from, to, amount); // emits Transfer, Approval
+        bool result = super.transferFrom(from, to, amount); // emits Transfer([]), Approval
         if (result) emit Approve(from, to, allowance(from, _msgSender()));
         return result;
     }
@@ -373,7 +370,7 @@ contract StableCoin is
         requiresNotFrozen
     {
         _beforeTokenAllowance(_msgSender(), spender);
-        super._approve(_msgSender(), spender, amount); // emits Approval([])
+        super._approve(_msgSender(), spender, amount); // emits Approval
         emit Approve(_msgSender(), spender, amount);
     }
 
