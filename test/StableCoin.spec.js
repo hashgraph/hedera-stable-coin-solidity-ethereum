@@ -27,8 +27,7 @@ describe("StableCoin", () => {
   const kycPassedRole = web3.utils.asciiToHex("KYC_PASSED");
 
   beforeEach(async () => {
-    this.contract = await StableCoin.new({ from: owner });
-    await this.contract.init(
+    this.contract = await StableCoin.new(
       name,
       symbol,
       decimals,
@@ -57,14 +56,6 @@ describe("StableCoin", () => {
     expect(await this.contract.isKycPassed(supplyManager));
     expect(await this.contract.isKycPassed(assetProtectionManager));
     expect((await this.contract.proposedOwner()) == constants.ZERO_ADDRESS);
-    expect(
-      (await this.contract.getRoleMemberCount(frozenRole, { from: owner })) == 0
-    );
-    expect(
-      (await this.contract.getRoleMemberCount(kycPassedRole, {
-        from: owner,
-      })) == 3
-    );
   });
 
   it("can change owner", async () => {
@@ -140,25 +131,13 @@ describe("StableCoin", () => {
       from: assetProtectionManager,
     });
     expectEvent(kycReceipt, "SetKycPassed", { account: nimdok });
-    expect(
-      (await this.contract.getRoleMemberCount(kycPassedRole, {
-        from: owner,
-      })) == 4
-    );
-    expect(await this.contract.hasRole(kycPassedRole, nimdok, { from: owner }));
+    expect(await this.contract.isKycPassed(nimdok, { from: owner }));
 
     const unkycReceipt = await this.contract.unsetKycPassed(nimdok, {
       from: assetProtectionManager,
     });
     expectEvent(unkycReceipt, "UnsetKycPassed", { account: nimdok });
-    expect(
-      (await this.contract.getRoleMemberCount(kycPassedRole, {
-        from: owner,
-      })) == 3
-    );
-    expect(
-      !(await this.contract.hasRole(kycPassedRole, nimdok, { from: owner }))
-    );
+    expect(!(await this.contract.isKycPassed(nimdok, { from: owner })));
     expectRevert(
       this.contract.transfer(owner, web3.utils.toWei("5", "ether"), {
         from: nimdok,
@@ -435,6 +414,11 @@ describe("StableCoin", () => {
       sender: ultron,
       recipient: nimdok,
       amount: web3.utils.toWei("1", "ether"),
+    });
+    expectEvent(transferFromReceipt, "Approve", {
+      sender: ultron,
+      spender: erasmus,
+      amount: web3.utils.toWei("28", "ether")
     });
   });
 

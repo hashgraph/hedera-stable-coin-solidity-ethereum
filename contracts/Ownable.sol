@@ -1,22 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.21 <0.7.0;
+pragma solidity >=0.4.21;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
+import "./Context.sol";
 
-contract OwnableUpgradeSafe is Initializable, ContextUpgradeSafe {
+contract Ownable is ContextAware {
     address private _owner;
     address private _proposedOwner;
 
     event ProposeOwner(address indexed proposedOwner);
     event ClaimOwnership(address newOwner);
 
-    function __Ownable_init() internal initializer {
-        __Context_init_unchained();
-        __Ownable_init_unchained();
-    }
-
-    function __Ownable_init_unchained() internal initializer {
+    constructor() public {
         address msgSender = _msgSender();
         _owner = msgSender;
         emit ClaimOwnership(msgSender);
@@ -31,7 +25,10 @@ contract OwnableUpgradeSafe is Initializable, ContextUpgradeSafe {
     }
 
     modifier onlyOwner() {
-        require(_owner == _msgSender(), "Only the owner can call this function.");
+        require(
+            _owner == _msgSender(),
+            "Only the owner can call this function."
+        );
         _;
     }
 
@@ -48,10 +45,7 @@ contract OwnableUpgradeSafe is Initializable, ContextUpgradeSafe {
     }
 
     function proposeOwner(address newOwner) public onlyOwner {
-        require(
-            newOwner != address(0),
-            "Cannot propose 0x0 as new owner."
-        );
+        require(newOwner != address(0), "Cannot propose 0x0 as new owner.");
         _proposedOwner = newOwner;
         emit ProposeOwner(_proposedOwner);
     }
