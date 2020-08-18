@@ -44,6 +44,6 @@ SOLC 0.6.8 used as compiler for both the oz sdk and truffle
 
 ##### Contract
 
-- ERC20, Ownable, Claimable, Pausable, [Initializable](https://docs.openzeppelin.com/upgrades/2.6/writing-upgradeable)
+- ERC20, Ownable, Claimable, Pausable
 
 - RBAC for Supply, Asset Protection, KYC, Frozen
