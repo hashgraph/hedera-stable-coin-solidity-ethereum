@@ -23,8 +23,6 @@ describe("StableCoin", () => {
   const owner = skynet;
   const supplyManager = squidward;
   const assetProtectionManager = rand_paul;
-  const frozenRole = web3.utils.asciiToHex("FROZEN");
-  const kycPassedRole = web3.utils.asciiToHex("KYC_PASSED");
 
   beforeEach(async () => {
     this.contract = await StableCoin.new(
