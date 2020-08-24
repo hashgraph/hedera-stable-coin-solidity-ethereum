@@ -13,6 +13,7 @@
     "ganache-cli": "^6.9.1",
     "mocha": "^8.1.0",
     "truffle": "^5.1.39",
+    "truffle-hdwallet-provider": "^1.0.17",
     "web3": "^1.2.11"
   },
   "scripts": {
@@ -20,7 +21,8 @@
     "network:truffle": "truffle develop --log",
     "network:ganache": "ganache-cli",
     "deploy": "oz deploy",
-    "deploy:truffle": "oz deploy --network truffle --kind upgradeable StableCoin",
-    "deploy:ganache": "oz deploy --network ganache --kind upgradeable StableCoin"
+    "deploy:truffle": "oz deploy --network truffle --kind regular StableCoin",
+    "deploy:ganache": "oz deploy --network ganache --kind regular StableCoin",
+    "deploy:ropsten": "oz deploy --network ropsten --kind regular StableCoin"
   }
 }

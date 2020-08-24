@@ -1,6 +1,8 @@
-module.exports = {
-  plugins: ["solidity-coverage"],
+const HDWalletProvider = require("truffle-hdwallet-provider");
+const MNEMONIC = "";
+const API_KEY = "";
 
+module.exports = {
   networks: {
     ganache: {
       host: "127.0.0.1",
@@ -11,6 +13,13 @@ module.exports = {
       host: "127.0.0.1",
       port: 9545,
       network_id: "*",
+    },
+    ropsten: {
+        provider: function() {
+            return new HDWalletProvider(MNEMONIC, `https://ropsten.infura.io/${API_KEY}`)
+        },
+        network_id: 3,
+        gas: 4000000 // Max Allowed
     }
   },
 
