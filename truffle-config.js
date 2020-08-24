@@ -1,6 +1,6 @@
 const HDWalletProvider = require("truffle-hdwallet-provider");
-const MNEMONIC = "";
-const API_KEY = "";
+const MNEMONIC = "d4907ee0ea57460e8e22314c4d03f1a5";
+const API_KEY = "3a8c65248272416a858dadbbb66c05a4";
 
 module.exports = {
   networks: {
