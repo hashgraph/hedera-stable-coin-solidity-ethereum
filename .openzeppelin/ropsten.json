@@ -1,0 +1,14 @@
+{
+  "contracts": {},
+  "solidityLibs": {},
+  "proxies": {
+    "StableCoin/StableCoin": [
+      {
+        "address": "0x42E9d6514D613D63c8c32cE385aad3dE9917C681",
+        "kind": "NonProxy",
+        "bytecodeHash": "af4f9511f80f8951838c510f3256d0038fcc63432112a882e94c232f68b27503"
+      }
+    ]
+  },
+  "manifestVersion": "2.2"
+}

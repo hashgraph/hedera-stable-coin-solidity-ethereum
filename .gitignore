@@ -2,4 +2,4 @@ installed_contracts/
 build/contracts/
 node_modules/
 .openzeppelin/.session
-truffle-config.js
+secrets.json

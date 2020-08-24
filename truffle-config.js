@@ -1,6 +1,8 @@
-const HDWalletProvider = require("truffle-hdwallet-provider");
-const MNEMONIC = "d4907ee0ea57460e8e22314c4d03f1a5";
-const API_KEY = "3a8c65248272416a858dadbbb66c05a4";
+const HDWalletProvider = require("@truffle/hdwallet-provider");
+const { API_KEY, MNEMONIC } = require("./secrets.json");
+
+// Deployed Contract (Ropsten)
+// 0x42E9d6514D613D63c8c32cE385aad3dE9917C681
 
 module.exports = {
   networks: {
@@ -15,12 +17,16 @@ module.exports = {
       network_id: "*",
     },
     ropsten: {
-        provider: function() {
-            return new HDWalletProvider(MNEMONIC, `https://ropsten.infura.io/${API_KEY}`)
-        },
-        network_id: 3,
-        gas: 4000000 // Max Allowed
-    }
+      provider: function() {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://ropsten.infura.io/v3/${API_KEY}`
+        );
+      },
+      network_id: "3",
+      gas: 4000000, // Max Allowed
+      skipDryRun: true
+    },
   },
 
   compilers: {
