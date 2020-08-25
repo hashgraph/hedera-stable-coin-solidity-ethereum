@@ -487,6 +487,5 @@
       "runs": 2000
     },
     "evmVersion": "petersburg"
-  },
-  "networks": {}
+  }
 }
