@@ -7200,15 +7200,6 @@ truffle-error@^0.0.5:
   resolved "https://registry.yarnpkg.com/truffle-error/-/truffle-error-0.0.5.tgz#6b5740c9f3aac74f47b85d654fff7fe2c1fc5e0e"
   integrity sha512-JpzPLMPSCE0vaZ3vH5NO5u42GpMj/Y1SRBkQ6b69PSw3xMSH1umApN32cEcg1nnh8q5FNYc5FnKu0m4tiBffyQ==
 
-truffle-export-abi@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/truffle-export-abi/-/truffle-export-abi-1.0.1.tgz#8e66e4bcf058c6b60fc517a4bb29a7b7ea6b5eaf"
-  integrity sha512-wt2mAQdTNB4SrZjWzyU+/f65zDwBhyfIhoDkqG8DCAeyYq8Rsu8xqBPhSFFKrvdqG5xh1fzfPtkCpyscIw49yg==
-  dependencies:
-    lodash "^4.17.11"
-    minimist "^1.2.0"
-    winston "^3.1.0"
-
 truffle-flattener@^1.4.0:
   version "1.4.4"
   resolved "https://registry.yarnpkg.com/truffle-flattener/-/truffle-flattener-1.4.4.tgz#747a99204001f7d6dce43ea92771e1ff6ac3eafb"

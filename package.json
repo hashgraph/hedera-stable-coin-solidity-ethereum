@@ -18,7 +18,6 @@
     "solc": "0.6.9",
     "truffle": "^5.1.39",
     "truffle-abi": "^1.0.3",
-    "truffle-export-abi": "^1.0.1",
     "web3": "^1.2.11"
   },
   "scripts": {
