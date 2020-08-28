@@ -6,14 +6,15 @@ import "./Pausable.sol";
 import "./Ownable.sol";
 import "./AccessControl.sol";
 import "./ERC20.sol";
-import "./ExternalTransfer.sol";
+import "./ExternallyTransferable.sol";
 
 contract StableCoin is
     ContextAware, // provides _msgSender(), _msgData()
     Pausable, // provides _pause(), _unpause()
     Ownable, // Ownable, Claimable
     AccessControl, // RBAC for KYC, Frozen
-    ERC20 // ERC20 Functions (transfer, balance, allowance, mint, burn)
+    ERC20, // ERC20 Functions (transfer, balance, allowance, mint, burn)
+    ExternallyTransferable // Supports External Transfers
 {
     // Defined Roles
     bytes32 private constant KYC_PASSED = keccak256("KYC_PASSED");
@@ -324,12 +325,12 @@ contract StableCoin is
 
     // approve an allowance for transfer to an external network
     function approveExternalTransfer(
-        string networkURI,
-        bytes externalAddress,
+        string memory networkURI,
+        bytes memory externalAddress,
         uint256 amount
     )
         public
-        override(ExternalTransfer)
+        override(ExternallyTransferable)
         requiresKYC
         requiresNotFrozen
         whenNotPaused
@@ -349,13 +350,13 @@ contract StableCoin is
 
     function externalTransfer(
         address from,
-        string networkURI,
-        bytes to,
+        string memory networkURI,
+        bytes memory to,
         uint256 amount
-    ) public override(ExternalTransfer) onlySupplyManager whenNotPaused {
+    ) public override(ExternallyTransferable) onlySupplyManager whenNotPaused {
         require(isKycPassed(from), "spdender account must pass KYC");
         require(!isFrozen(from), "spender account frozen");
-        uint256 exAllowance = externalAllowanceOf(from, networkURI, to, amount);
+        uint256 exAllowance = externalAllowanceOf(from, networkURI, to);
         require(amount <= exAllowance, "Amount greater than allowance.");
         super._transfer(from, _supplyManager, amount);
         _burn(_supplyManager, amount);
@@ -369,11 +370,11 @@ contract StableCoin is
     }
 
     function externalTransferFrom(
-        bytes from,
-        string networkURI,
+        bytes memory from,
+        string memory networkURI,
         address to,
         uint256 amount
-    ) public override(ExternalTransfer) onlySupplyManager whenNotPaused {
+    ) public override(ExternallyTransferable) onlySupplyManager whenNotPaused {
         require(isKycPassed(to), "recipient must pass KYC");
         require(!isFrozen(to), "recipient account is frozen");
         _mint(_supplyManager, amount);
