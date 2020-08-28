@@ -354,7 +354,7 @@ contract StableCoin is
         bytes memory to,
         uint256 amount
     ) public override(ExternallyTransferable) onlySupplyManager whenNotPaused {
-        require(isKycPassed(from), "spdender account must pass KYC");
+        require(isKycPassed(from), "spender account must pass KYC");
         require(!isFrozen(from), "spender account frozen");
         uint256 exAllowance = externalAllowanceOf(from, networkURI, to);
         require(amount <= exAllowance, "Amount greater than allowance.");
