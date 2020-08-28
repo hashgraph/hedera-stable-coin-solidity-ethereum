@@ -6,6 +6,7 @@ import "./Pausable.sol";
 import "./Ownable.sol";
 import "./AccessControl.sol";
 import "./ERC20.sol";
+import "./ExternalTransfer.sol";
 
 contract StableCoin is
     ContextAware, // provides _msgSender(), _msgData()
@@ -46,6 +47,24 @@ contract StableCoin is
     event UnsetKycPassed(address account);
     event Pause(address sender); // Pause: Pause entire contract
     event Unpause(address sender);
+    event ApproveExternalTransfer(
+        address sender,
+        string networkURI,
+        bytes externalRecipient,
+        uint256 amount
+    );
+    event ExternalTransfer(
+        address from,
+        string networkURI,
+        bytes to,
+        uint256 amount
+    );
+    event ExternalTransferFrom(
+        bytes from,
+        string networkURI,
+        address to,
+        uint256 amount
+    );
 
     constructor(
         string memory tokenName,
@@ -221,11 +240,7 @@ contract StableCoin is
     }
 
     // Claim Ownership
-    function claimOwnership()
-        public
-        override(Ownable)
-        onlyProposedOwner
-    {
+    function claimOwnership() public override(Ownable) onlyProposedOwner {
         address prevOwner = owner();
         super.claimOwnership(); // emits ClaimOwnership
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -298,12 +313,72 @@ contract StableCoin is
         super._beforeTokenTransfer(from, to, amount); // callbacks from above (if any)
     }
 
-    function transfer(address to, uint256 amount)
-        public
-        override(ERC20)
-    {
+    function transfer(address to, uint256 amount) public override(ERC20) {
         super._transfer(_msgSender(), to, amount);
         emit Transfer(_msgSender(), to, amount);
+    }
+
+    /*
+     * External Transfers
+     */
+
+    // approve an allowance for transfer to an external network
+    function approveExternalTransfer(
+        string networkURI,
+        bytes externalAddress,
+        uint256 amount
+    )
+        public
+        override(ExternalTransfer)
+        requiresKYC
+        requiresNotFrozen
+        whenNotPaused
+    {
+        require(
+            amount <= balanceOf(_msgSender()),
+            "Cannot approve more than balance."
+        );
+        super.approveExternalTransfer(networkURI, externalAddress, amount);
+        emit ApproveExternalTransfer(
+            _msgSender(),
+            networkURI,
+            externalAddress,
+            amount
+        );
+    }
+
+    function externalTransfer(
+        address from,
+        string networkURI,
+        bytes to,
+        uint256 amount
+    ) public override(ExternalTransfer) onlySupplyManager whenNotPaused {
+        require(isKycPassed(from), "spdender account must pass KYC");
+        require(!isFrozen(from), "spender account frozen");
+        uint256 exAllowance = externalAllowanceOf(from, networkURI, to, amount);
+        require(amount <= exAllowance, "Amount greater than allowance.");
+        super._transfer(from, _supplyManager, amount);
+        _burn(_supplyManager, amount);
+        _approveExternalAllowance(
+            from,
+            networkURI,
+            to,
+            exAllowance.sub(amount)
+        );
+        emit ExternalTransfer(from, networkURI, to, amount);
+    }
+
+    function externalTransferFrom(
+        bytes from,
+        string networkURI,
+        address to,
+        uint256 amount
+    ) public override(ExternalTransfer) onlySupplyManager whenNotPaused {
+        require(isKycPassed(to), "recipient must pass KYC");
+        require(!isFrozen(to), "recipient account is frozen");
+        _mint(_supplyManager, amount);
+        super._transfer(_supplyManager, to, amount);
+        emit ExternalTransferFrom(from, networkURI, to, amount);
     }
 
     /*
@@ -311,13 +386,11 @@ contract StableCoin is
      */
 
     // Check Allowance Allowed (internal)
-    function _beforeTokenAllowance(address sender, address spender, uint256 amount)
-        internal
-        override(ERC20)
-        requiresKYC
-        requiresNotFrozen
-        whenNotPaused
-    {
+    function _beforeTokenAllowance(
+        address sender,
+        address spender,
+        uint256 amount
+    ) internal override(ERC20) requiresKYC requiresNotFrozen whenNotPaused {
         require(isKycPassed(spender), "Spender requires KYC to continue.");
         require(isKycPassed(sender), "Sender requires KYC to continue.");
         require(!isFrozen(spender), "Spender account is frozen.");
