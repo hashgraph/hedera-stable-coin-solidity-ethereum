@@ -508,7 +508,7 @@ describe("StableCoin", () => {
     );
   });
 
-  it("can external transfer", async () => {
+  it("can send external transfer", async () => {
     await this.contract.setKycPassed(nimdok, { from: complianceManager });
     await this.contract.setKycPassed(ultron, { from: complianceManager });
     await this.contract.transfer(ultron, web3.utils.toWei("10", "ether"), {
@@ -568,6 +568,43 @@ describe("StableCoin", () => {
 
     expect((await this.contract.totalSupply()) == web3.utils.toWei("299", "ether"));
     expect((await this.contract.balanceOf(ultron)) == web3.utils.toWei("9", "ether"));
+  });
+
+  it("can receive external transfer", async () => {
+    const network = "hsc://0.0.999999";
+    const amount = web3.utils.toWei("1", "ether");
+    const externalAddress = web3.utils.fromAscii(
+      "480474335c38c27bfde1f0c2010d3db95eeb74a1f8ac65212f7824ce1ab84eca"
+    );
+
+    expectRevert(
+      this.contract.externalTransferFrom(
+        externalAddress,
+        network,
+        ultron,
+        amount,
+        { from: supplyManager }
+      ),
+      "Recipient account requires KYC to continue."
+    );
+   
+    await this.contract.setKycPassed(ultron, { from: complianceManager })
+    const externalTransferReceipt = await this.contract.externalTransferFrom(
+      externalAddress,
+      network,
+      ultron,
+      amount,
+      { from: supplyManager }
+    );
+    expectEvent(externalTransferReceipt, "ExternalTransferFrom", {
+      from: externalAddress,
+      networkURI: network,
+      to: ultron,
+      amount: amount
+    });
+
+    expect((await this.contract.totalSupply()) == web3.utils.toWei("301", "ether"));
+    expect((await this.contract.balanceOf(ultron)) == web3.utils.toWei("1", "ether"));
   });
 
   afterEach(() => {
