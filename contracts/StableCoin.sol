@@ -22,7 +22,8 @@ contract StableCoin is
 
     // Special People
     address private _supplyManager;
-    address private _assetProtectionManager;
+    address private _complianceManager;
+    address private _enforcementManager;
 
     // Events Emitted
     event Constructed(
@@ -31,10 +32,16 @@ contract StableCoin is
         uint8 tokenDecimal,
         uint256 totalSupply,
         address supplyManager,
-        address assetProtectionManager
+        address complianceManager,
+        address enforcementManager
     );
+
+    // Privileged Roles
     event ChangeSupplyManager(address newSupplyManager);
-    event ChangeAssetProtectionManager(address newAssetProtectionManager);
+    event ChangeComplianceManager(address newComplianceManager);
+    event ChangeEnforcementManager(address newEnforcementManager);
+
+    // ERC20+
     event Wipe(address account, uint256 amount);
     event Mint(address account, uint256 amount);
     event Burn(address account, uint256 amount);
@@ -42,16 +49,23 @@ contract StableCoin is
     event Approve(address sender, address spender, uint256 amount);
     event IncreaseAllowance(address sender, address spender, uint256 amount);
     event DecreaseAllowance(address sender, address spender, uint256 amount);
+
+    // KYC
     event Freeze(address account); // Freeze: Freeze this account
     event Unfreeze(address account);
     event SetKycPassed(address account);
     event UnsetKycPassed(address account);
+
+    // Halt
     event Pause(address sender); // Pause: Pause entire contract
     event Unpause(address sender);
+
+    // "External Transfer"
+    // Signify to the coin bridge to perform external transfer
     event ApproveExternalTransfer(
-        address sender,
+        address from,
         string networkURI,
-        bytes externalRecipient,
+        bytes to,
         uint256 amount
     );
     event ExternalTransfer(
@@ -73,24 +87,27 @@ contract StableCoin is
         uint8 tokenDecimal,
         uint256 totalSupply,
         address supplyManager,
-        address assetProtectionManager
+        address complianceManager,
+        address enforcementManager
     ) public ERC20(tokenName, tokenSymbol, tokenDecimal) {
         _supplyManager = supplyManager;
-        _assetProtectionManager = assetProtectionManager;
+        _complianceManager = complianceManager;
+        _enforcementManager = enforcementManager;
 
         // Owner has Admin Privileges on all roles
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender()); // sudo role
 
-        // Give APM ability to grant/revoke roles (but not admin of this role)
-        grantRole(DEFAULT_ADMIN_ROLE, assetProtectionManager);
+        // Give CM ability to grant/revoke roles (but not admin of this role)
+        grantRole(DEFAULT_ADMIN_ROLE, complianceManager);
 
         // KYC accounts
         grantRole(KYC_PASSED, _msgSender());
         grantRole(KYC_PASSED, supplyManager);
-        grantRole(KYC_PASSED, assetProtectionManager);
+        grantRole(KYC_PASSED, complianceManager);
+        grantRole(KYC_PASSED, enforcementManager);
 
         // Give supply manager all tokens
-        mint(totalSupply); // Emits Transfer, Mint
+        mint(totalSupply); // Emits Mint
 
         // Did it
         emit Constructed(
@@ -99,7 +116,8 @@ contract StableCoin is
             tokenDecimal,
             totalSupply,
             supplyManager,
-            assetProtectionManager
+            complianceManager,
+            enforcementManager
         );
     }
 
@@ -131,37 +149,65 @@ contract StableCoin is
         emit ChangeSupplyManager(newSupplyManager);
     }
 
-    function assetProtectionManager() public view returns (address) {
-        return _assetProtectionManager;
+    function complianceManager() public view returns (address) {
+        return _complianceManager;
     }
 
-    modifier onlyAssetProtectionManager() {
+    modifier onlyComplianceManager() {
         require(
-            _msgSender() == assetProtectionManager() || _msgSender() == owner(),
-            "Only an Asset Protection Manager can call this function."
+            _msgSender() == complianceManager() || _msgSender() == owner(),
+            "Only the Compliance Manager can call this function."
         );
         _;
     }
 
-    function changeAssetProtectionManager(address newAssetProtectionManager)
+    function changeComplianceManager(address newComplianceManager)
         public
         onlyOwner
     {
         require(
-            newAssetProtectionManager != address(0),
-            "Cannot change asset protection manager to 0x0."
+            newComplianceManager != address(0),
+            "Cannot change compliance manager to 0x0."
         );
-        revokeRole(KYC_PASSED, _assetProtectionManager);
-        _assetProtectionManager = newAssetProtectionManager;
-        grantRole(KYC_PASSED, _assetProtectionManager);
-        revokeRole(FROZEN, _assetProtectionManager);
-        emit ChangeAssetProtectionManager(newAssetProtectionManager);
+        revokeRole(KYC_PASSED, _complianceManager);
+        _complianceManager = newComplianceManager;
+        grantRole(KYC_PASSED, _complianceManager);
+        revokeRole(FROZEN, _complianceManager);
+        emit ChangeComplianceManager(newComplianceManager);
+    }
+
+    function enforcementManager() public view returns (address) {
+        return _enforcementManager;
+    }
+
+    modifier onlyEnforcementManager() {
+        require(
+            _msgSender() == enforcementManager() || _msgSender() == owner(),
+            "Only the Enforcement Manager can call this function."
+        );
+        _;
+    }
+
+    function changeEnforcementManager(address newEnforcementManager)
+        public
+        onlyOwner
+    {
+        require(
+            newEnforcementManager != address(0),
+            "Cannot change enforcement manager to 0x0"
+        );
+        revokeRole(KYC_PASSED, _enforcementManager);
+        _enforcementManager = newEnforcementManager;
+        grantRole(KYC_PASSED, _enforcementManager);
+        revokeRole(FROZEN, _enforcementManager);
+        emit ChangeEnforcementManager(newEnforcementManager);
     }
 
     function isPrivilegedRole(address account) public view returns (bool) {
         return
             account == supplyManager() ||
-            account == assetProtectionManager() ||
+            account == complianceManager() ||
+            account == enforcementManager() ||
             account == owner();
     }
 
@@ -177,14 +223,14 @@ contract StableCoin is
         return hasRole(KYC_PASSED, account);
     }
 
-    // KYC: only APM
-    function setKycPassed(address account) public onlyAssetProtectionManager {
+    // KYC: only CM
+    function setKycPassed(address account) public onlyComplianceManager {
         grantRole(KYC_PASSED, account);
         emit SetKycPassed(account);
     }
 
-    // Un-KYC: only APM, only non-privileged accounts
-    function unsetKycPassed(address account) public onlyAssetProtectionManager {
+    // Un-KYC: only CM, only non-privileged accounts
+    function unsetKycPassed(address account) public onlyComplianceManager {
         require(
             !isPrivilegedRole(account),
             "Cannot unset KYC for administrator account."
@@ -206,8 +252,8 @@ contract StableCoin is
         return hasRole(FROZEN, account);
     }
 
-    // Freeze an account: only APM, only non-privileged accounts
-    function freeze(address account) public onlyAssetProtectionManager {
+    // Freeze an account: only CM, only non-privileged accounts
+    function freeze(address account) public onlyComplianceManager {
         require(
             !isPrivilegedRole(account),
             "Cannot freeze administrator account."
@@ -217,8 +263,8 @@ contract StableCoin is
         emit Freeze(account);
     }
 
-    // Unfreeze an account: only APM
-    function unfreeze(address account) public onlyAssetProtectionManager {
+    // Unfreeze an account: only CM
+    function unfreeze(address account) public onlyComplianceManager {
         revokeRole(FROZEN, account);
         emit Unfreeze(account);
     }
@@ -228,14 +274,14 @@ contract StableCoin is
         return isKycPassed(account) && !isFrozen(account);
     }
 
-    // Pause: Only APM
-    function pause() public onlyAssetProtectionManager {
+    // Pause: Only CM
+    function pause() public onlyComplianceManager {
         _pause();
         emit Pause(_msgSender());
     }
 
-    // Unpause: Only APM
-    function unpause() public onlyAssetProtectionManager {
+    // Unpause: Only CM
+    function unpause() public onlyComplianceManager {
         _unpause();
         emit Unpause(_msgSender());
     }
@@ -251,7 +297,7 @@ contract StableCoin is
     }
 
     // Wipe
-    function wipe(address account) public onlyAssetProtectionManager {
+    function wipe(address account) public onlyEnforcementManager {
         require(
             hasRole(FROZEN, account),
             "Account must be frozen prior to wipe."
@@ -307,8 +353,8 @@ contract StableCoin is
         }
 
         // All other transfers
-        require(isKycPassed(from), "Sender requires KYC to continue.");
-        require(isKycPassed(to), "Receiver requires KYC to continue.");
+        require(isKycPassed(from), "Sender account requires KYC to continue.");
+        require(isKycPassed(to), "Receiver account requires KYC to continue.");
         require(!isFrozen(from), "Sender account is frozen.");
         require(!isFrozen(to), "Receiver account is frozen.");
         super._beforeTokenTransfer(from, to, amount); // callbacks from above (if any)
@@ -354,8 +400,8 @@ contract StableCoin is
         bytes memory to,
         uint256 amount
     ) public override(ExternallyTransferable) onlySupplyManager whenNotPaused {
-        require(isKycPassed(from), "spender account must pass KYC");
-        require(!isFrozen(from), "spender account frozen");
+        require(isKycPassed(from), "Spender account requires KYC to continue.");
+        require(!isFrozen(from), "Spender account is frozen.");
         uint256 exAllowance = externalAllowanceOf(from, networkURI, to);
         require(amount <= exAllowance, "Amount greater than allowance.");
         super._transfer(from, _supplyManager, amount);
@@ -375,8 +421,8 @@ contract StableCoin is
         address to,
         uint256 amount
     ) public override(ExternallyTransferable) onlySupplyManager whenNotPaused {
-        require(isKycPassed(to), "recipient must pass KYC");
-        require(!isFrozen(to), "recipient account is frozen");
+        require(isKycPassed(to), "Recipient account requires KYC to continue.");
+        require(!isFrozen(to), "Recipient account is frozen.");
         _mint(_supplyManager, amount);
         super._transfer(_supplyManager, to, amount);
         emit ExternalTransferFrom(from, networkURI, to, amount);
@@ -392,8 +438,8 @@ contract StableCoin is
         address spender,
         uint256 amount
     ) internal override(ERC20) requiresKYC requiresNotFrozen whenNotPaused {
-        require(isKycPassed(spender), "Spender requires KYC to continue.");
-        require(isKycPassed(sender), "Sender requires KYC to continue.");
+        require(isKycPassed(spender), "Spender account requires KYC to continue.");
+        require(isKycPassed(sender), "Sender account requires KYC to continue.");
         require(!isFrozen(spender), "Spender account is frozen.");
         require(!isFrozen(sender), "Sender account is frozen.");
         require(amount >= 0, "Allowance must be greater than 0.");

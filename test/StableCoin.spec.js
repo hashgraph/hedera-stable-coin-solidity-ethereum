@@ -13,7 +13,15 @@ const StableCoin = contract.fromArtifact("StableCoin");
 describe("StableCoin", () => {
   this.contract = null;
 
-  const [squidward, skynet, rand_paul, nimdok, ultron, erasmus] = accounts; // get accounts from test utils
+  const [
+    squidward,
+    skynet,
+    rand_paul,
+    nimdok,
+    ultron,
+    erasmus,
+    walle,
+  ] = accounts; // get accounts from test utils
 
   // Contract Information
   const name = "Bikini Bottom Bux";
@@ -22,7 +30,8 @@ describe("StableCoin", () => {
   const totalSupply = web3.utils.toWei("300", "ether"); // 300 BBB in circulation
   const owner = skynet;
   const supplyManager = squidward;
-  const assetProtectionManager = rand_paul;
+  const complianceManager = rand_paul;
+  const enforcementManager = walle;
 
   beforeEach(async () => {
     this.contract = await StableCoin.new(
@@ -31,7 +40,8 @@ describe("StableCoin", () => {
       decimals,
       totalSupply,
       supplyManager,
-      assetProtectionManager,
+      complianceManager,
+      enforcementManager,
       { from: owner }
     );
   });
@@ -39,9 +49,8 @@ describe("StableCoin", () => {
   it("initializes with expected state", async () => {
     expect((await this.contract.owner()) == owner);
     expect((await this.contract.supplyManager()) == supplyManager);
-    expect(
-      (await this.contract.assetProtectionManager()) == assetProtectionManager
-    );
+    expect((await this.contract.complianceManager()) == complianceManager);
+    expect((await this.contract.enforcementManager()) == enforcementManager);
     expect(
       (await this.contract.balanceOf(supplyManager)) ==
         (await this.contract.totalSupply())
@@ -52,7 +61,8 @@ describe("StableCoin", () => {
     expect((await this.contract.totalSupply()) == totalSupply);
     expect(await this.contract.isKycPassed(owner));
     expect(await this.contract.isKycPassed(supplyManager));
-    expect(await this.contract.isKycPassed(assetProtectionManager));
+    expect(await this.contract.isKycPassed(complianceManager));
+    expect(await this.contract.isKycPassed(enforcementManager));
     expect((await this.contract.proposedOwner()) == constants.ZERO_ADDRESS);
   });
 
@@ -107,32 +117,47 @@ describe("StableCoin", () => {
     expect(this.contract.supplyManager() == nimdok);
   });
 
-  it("can change asset protection manager", async () => {
+  it("can change compliance manager", async () => {
     expectRevert(
-      this.contract.changeAssetProtectionManager(nimdok, { from: nimdok }),
+      this.contract.changeComplianceManager(nimdok, { from: nimdok }),
       "Only the owner can call this function."
     );
 
-    const changeReceipt = await this.contract.changeAssetProtectionManager(
-      nimdok,
-      { from: owner }
+    const changeReceipt = await this.contract.changeComplianceManager(nimdok, {
+      from: owner,
+    });
+
+    expectEvent(changeReceipt, "ChangeComplianceManager", {
+      newComplianceManager: nimdok,
+    });
+    expect(this.contract.complianceManager() == nimdok);
+  });
+
+  it("can change enforcement manager", async () => {
+    expectRevert(
+      this.contract.changeEnforcementManager(nimdok, { from: nimdok }),
+      "Only the owner can call this function."
     );
 
-    expectEvent(changeReceipt, "ChangeAssetProtectionManager", {
-      newAssetProtectionManager: nimdok,
+    const changeReceipt = await this.contract.changeEnforcementManager(nimdok, {
+      from: owner,
     });
-    expect(this.contract.assetProtectionManager() == nimdok);
+
+    expectEvent(changeReceipt, "ChangeEnforcementManager", {
+      newEnforcementManager: nimdok,
+    });
+    expect(this.contract.enforcementManager() == nimdok);
   });
 
   it("can set and unset KYC for accounts", async () => {
     const kycReceipt = await this.contract.setKycPassed(nimdok, {
-      from: assetProtectionManager,
+      from: complianceManager,
     });
     expectEvent(kycReceipt, "SetKycPassed", { account: nimdok });
     expect(await this.contract.isKycPassed(nimdok, { from: owner }));
 
     const unkycReceipt = await this.contract.unsetKycPassed(nimdok, {
-      from: assetProtectionManager,
+      from: complianceManager,
     });
     expectEvent(unkycReceipt, "UnsetKycPassed", { account: nimdok });
     expect(!(await this.contract.isKycPassed(nimdok, { from: owner })));
@@ -145,13 +170,13 @@ describe("StableCoin", () => {
   });
 
   it("can freeze and unfreeze accounts", async () => {
-    await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
+    await this.contract.setKycPassed(nimdok, { from: complianceManager });
     await this.contract.transfer(nimdok, web3.utils.toWei("10", "ether"), {
       from: supplyManager,
     });
 
     const freezeReceipt = await this.contract.freeze(nimdok, {
-      from: assetProtectionManager,
+      from: complianceManager,
     });
     expectEvent(freezeReceipt, "Freeze", { account: nimdok });
 
@@ -163,7 +188,7 @@ describe("StableCoin", () => {
     );
 
     const unfreezeReceipt = await this.contract.unfreeze(nimdok, {
-      from: assetProtectionManager,
+      from: complianceManager,
     });
     expectEvent(unfreezeReceipt, "Unfreeze", { account: nimdok });
 
@@ -216,8 +241,8 @@ describe("StableCoin", () => {
   });
 
   it("is transferrable", async () => {
-    await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
-    await this.contract.setKycPassed(ultron, { from: assetProtectionManager });
+    await this.contract.setKycPassed(nimdok, { from: complianceManager });
+    await this.contract.setKycPassed(ultron, { from: complianceManager });
     await this.contract.transfer(ultron, web3.utils.toWei("10", "ether"), {
       from: supplyManager,
     });
@@ -243,9 +268,9 @@ describe("StableCoin", () => {
   });
 
   it("is pausable", async () => {
-    await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
-    await this.contract.setKycPassed(ultron, { from: assetProtectionManager });
-    await this.contract.setKycPassed(erasmus, { from: assetProtectionManager });
+    await this.contract.setKycPassed(nimdok, { from: complianceManager });
+    await this.contract.setKycPassed(ultron, { from: complianceManager });
+    await this.contract.setKycPassed(erasmus, { from: complianceManager });
     await this.contract.transfer(ultron, web3.utils.toWei("10", "ether"), {
       from: supplyManager,
     });
@@ -258,9 +283,9 @@ describe("StableCoin", () => {
 
     // CEASE
     const pauseReceipt = await this.contract.pause({
-      from: assetProtectionManager,
+      from: complianceManager,
     });
-    expectEvent(pauseReceipt, "Pause", { sender: assetProtectionManager });
+    expectEvent(pauseReceipt, "Pause", { sender: complianceManager });
 
     const transfer1st = this.contract.transfer(
       nimdok,
@@ -281,9 +306,9 @@ describe("StableCoin", () => {
 
     // mk
     const unpauseReceipt = await this.contract.unpause({
-      from: assetProtectionManager,
+      from: complianceManager,
     });
-    expectEvent(unpauseReceipt, "Unpause", { sender: assetProtectionManager });
+    expectEvent(unpauseReceipt, "Unpause", { sender: complianceManager });
 
     const transfer3rdReceipt = await this.contract.transfer(
       nimdok,
@@ -312,8 +337,8 @@ describe("StableCoin", () => {
   });
 
   it("is delegable", async () => {
-    await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
-    await this.contract.setKycPassed(ultron, { from: assetProtectionManager });
+    await this.contract.setKycPassed(nimdok, { from: complianceManager });
+    await this.contract.setKycPassed(ultron, { from: complianceManager });
     await this.contract.transfer(ultron, web3.utils.toWei("10", "ether"), {
       from: supplyManager,
     });
@@ -333,7 +358,7 @@ describe("StableCoin", () => {
       this.contract.approveAllowance(erasmus, web3.utils.toWei("2", "ether"), {
         from: ultron,
       }),
-      "Spender requires KYC to continue."
+      "Spender account requires KYC to continue."
     );
     expectRevert(
       this.contract.approveAllowance(
@@ -346,7 +371,7 @@ describe("StableCoin", () => {
       "Calling this function requires KYC approval."
     );
 
-    await this.contract.setKycPassed(erasmus, { from: assetProtectionManager });
+    await this.contract.setKycPassed(erasmus, { from: complianceManager });
     const delegate2ndReceipt = await this.contract.approveAllowance(
       erasmus,
       web3.utils.toWei("20", "ether"),
@@ -359,7 +384,7 @@ describe("StableCoin", () => {
       spender: erasmus,
       amount: web3.utils.toWei("20", "ether"),
     });
-    
+
     // Increase Allowance
     const increaseReceipt = await this.contract.increaseAllowance(
       erasmus,
@@ -416,38 +441,133 @@ describe("StableCoin", () => {
     expectEvent(transferFromReceipt, "Approve", {
       sender: ultron,
       spender: erasmus,
-      amount: web3.utils.toWei("28", "ether")
+      amount: web3.utils.toWei("28", "ether"),
     });
   });
 
   it("can wipe accounts", async () => {
-    await this.contract.setKycPassed(nimdok, { from: assetProtectionManager });
-    await this.contract.setKycPassed(ultron, { from: assetProtectionManager });
+    await this.contract.setKycPassed(nimdok, { from: complianceManager });
+    await this.contract.setKycPassed(ultron, { from: complianceManager });
     await this.contract.transfer(ultron, web3.utils.toWei("10", "ether"), {
       from: supplyManager,
     });
 
     expectRevert(
-      this.contract.wipe(ultron, { from: assetProtectionManager }),
+      this.contract.wipe(ultron, { from: enforcementManager }),
       "Account must be frozen prior to wipe."
     );
 
-    await this.contract.freeze(ultron, { from: assetProtectionManager });
+    await this.contract.freeze(ultron, { from: complianceManager });
     const balance = await this.contract.balanceOf(ultron, {
-      from: assetProtectionManager,
+      from: enforcementManager,
     });
     const wipeReceipt = await this.contract.wipe(ultron, {
-      from: assetProtectionManager,
+      from: enforcementManager,
     });
     expectEvent(wipeReceipt, "Wipe", {
       account: ultron,
       amount: balance,
     });
-    await this.contract.unfreeze(ultron, { from: assetProtectionManager });
+    await this.contract.unfreeze(ultron, { from: complianceManager });
     expect((await this.contract.balanceOf(ultron, { from: ultron })) == 0);
     expect(
       (await this.contract.totalSupply()) == web3.utils.toWei("290", "ether")
     );
+  });
+
+  it("can request external transfer", async () => {
+    await this.contract.setKycPassed(nimdok, { from: complianceManager });
+    await this.contract.setKycPassed(ultron, { from: complianceManager });
+    await this.contract.transfer(ultron, web3.utils.toWei("10", "ether"), {
+      from: supplyManager,
+    });
+
+    const network = "hsc://0.0.999999";
+    const amount = web3.utils.toWei("1", "ether");
+    const externalAddress = web3.utils.fromAscii(
+      "480474335c38c27bfde1f0c2010d3db95eeb74a1f8ac65212f7824ce1ab84eca"
+    );
+    const requestReceipt = await this.contract.approveExternalTransfer(
+      network,
+      externalAddress,
+      amount,
+      { from: ultron }
+    );
+    expectEvent(requestReceipt, "ApproveExternalTransfer", {
+      from: ultron,
+      networkURI: network,
+      to: externalAddress,
+      amount: amount,
+    });
+    expect(
+      (await this.contract.externalAllowanceOf(
+        ultron,
+        network,
+        externalAddress
+      )) == amount
+    );
+  });
+
+  it("can external transfer", async () => {
+    await this.contract.setKycPassed(nimdok, { from: complianceManager });
+    await this.contract.setKycPassed(ultron, { from: complianceManager });
+    await this.contract.transfer(ultron, web3.utils.toWei("10", "ether"), {
+      from: supplyManager,
+    });
+
+    const network = "hsc://0.0.999999";
+    const amount = web3.utils.toWei("1", "ether");
+    const externalAddress = web3.utils.fromAscii(
+      "480474335c38c27bfde1f0c2010d3db95eeb74a1f8ac65212f7824ce1ab84eca"
+    );
+
+    expectRevert(
+      this.contract.externalTransfer(
+      ultron,
+      network,
+      externalAddress,
+      amount,
+      { from: supplyManager }
+    ),
+    "Amount greater than allowance."
+    );
+
+    await this.contract.unsetKycPassed(ultron, { from: complianceManager });
+    expectRevert(
+      this.contract.externalTransfer(
+      ultron,
+      network,
+      externalAddress,
+      amount,
+      { from: supplyManager }
+    ),
+    "Spender account requires KYC to continue."
+    );
+    
+    await this.contract.setKycPassed(ultron, { from: complianceManager });
+    await this.contract.approveExternalTransfer(
+      network,
+      externalAddress,
+      amount,
+      { from: ultron }
+    );
+
+    const externalTransferReceipt = await this.contract.externalTransfer(
+      ultron,
+      network,
+      externalAddress,
+      amount,
+      { from: supplyManager }
+    );
+    expectEvent(externalTransferReceipt, "ExternalTransfer", {
+      from: ultron,
+      networkURI: network,
+      to: externalAddress,
+      amount: amount
+    });
+
+    expect((await this.contract.totalSupply()) == web3.utils.toWei("299", "ether"));
+    expect((await this.contract.balanceOf(ultron)) == web3.utils.toWei("9", "ether"));
   });
 
   afterEach(() => {
