@@ -297,15 +297,15 @@ contract StableCoin is
     }
 
     // Wipe
-    function wipe(address account) public onlyEnforcementManager {
-        require(
-            hasRole(FROZEN, account),
-            "Account must be frozen prior to wipe."
-        );
+    function wipe(address account, uint256 amount) public onlyEnforcementManager {
         uint256 balance = balanceOf(account);
-        super._transfer(account, _supplyManager, balance);
-        _burn(_supplyManager, balance);
-        emit Wipe(account, balance);
+        require(
+            amount <= balance,
+            "Amount cannot be greater than balance"
+        );
+        super._transfer(account, _supplyManager, amount);
+        _burn(_supplyManager, amount);
+        emit Wipe(account, amount);
     }
 
     /*

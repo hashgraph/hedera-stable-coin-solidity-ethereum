@@ -1,0 +1,110 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "networkURI",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes",
+        "name": "externalAddress",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "approveExternalTransfer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "networkURI",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes",
+        "name": "externalAddress",
+        "type": "bytes"
+      }
+    ],
+    "name": "externalAllowanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "networkURI",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes",
+        "name": "to",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "externalTransfer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "from",
+        "type": "bytes"
+      },
+      {
+        "internalType": "string",
+        "name": "networkURI",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "externalTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

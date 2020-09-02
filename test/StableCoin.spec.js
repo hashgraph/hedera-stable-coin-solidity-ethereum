@@ -452,16 +452,11 @@ describe("StableCoin", () => {
       from: supplyManager,
     });
 
-    expectRevert(
-      this.contract.wipe(ultron, { from: enforcementManager }),
-      "Account must be frozen prior to wipe."
-    );
-
     await this.contract.freeze(ultron, { from: complianceManager });
     const balance = await this.contract.balanceOf(ultron, {
       from: enforcementManager,
     });
-    const wipeReceipt = await this.contract.wipe(ultron, {
+    const wipeReceipt = await this.contract.wipe(ultron, balance, {
       from: enforcementManager,
     });
     expectEvent(wipeReceipt, "Wipe", {
