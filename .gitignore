@@ -1,5 +1,28 @@
-installed_contracts/
-build/contracts/
+# Dependencies
 node_modules/
-.openzeppelin/.session
+
+# Backup files
+*.backup
+
+# Environment and secret files
+.env
 secrets.json
+
+# Build artifacts
+build/
+
+# IDE and system files
+.DS_Store
+.idea/
+.vscode/
+
+# Truffle build directory
+.truffle/
+
+# Yarn/npm debug logs
+yarn-debug.log*
+yarn-error.log*
+npm-debug.log*
+
+# Local development files
+*.local
