@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.21 <0.7.1;
+pragma solidity >=0.4.21;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/utils/Address.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
 import "./Context.sol";
 
@@ -11,8 +11,8 @@ import "./Context.sol";
  * emit events and that renames approve --> approveAllowance
  */
 abstract contract ERC20 is ContextAware {
-    using SafeMath for uint256;
-    using Address for address;
+    using SafeMathUpgradeable for uint256;
+    using AddressUpgradeable for address;
 
     mapping (address => uint256) private _balances;
 

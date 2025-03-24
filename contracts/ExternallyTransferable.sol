@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.21 <0.7.1;
+pragma solidity >=0.4.21;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 import "./Context.sol";
 
 abstract contract ExternallyTransferable is ContextAware {
-    using SafeMath for uint256;
+    using SafeMathUpgradeable for uint256;
 
     // address => string (network URI) => bytes (external address) => amount
     mapping(address => mapping(string => mapping(bytes => uint256)))
